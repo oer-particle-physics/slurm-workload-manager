@@ -1,21 +1,19 @@
-# This template CITATION.cff file is meant to be replaced with
-# the metadata for your lesson. Keep the structure, but update
-# the title, authors, abstract, and repository details before
-# publishing your material.
-
 cff-version: 1.2.0
-title: Hugo Styles Starter Lesson
+title: Slurm Workload Manager
 message: >-
   Please cite this lesson using the metadata from this file when
   you refer to it in publications or re-use, adapt, or expand on
   the material in your own teaching.
 type: dataset
 authors:
-  - given-names: Example
-    family-names: Author
+  - given-names: Clemens
+    family-names: Lange
 abstract: >-
-  Example metadata for a lesson created from the Hugo Styles template.
-  Replace this abstract with the intended audience and learning goals.
-repository-code: https://github.com/example/example-lesson
-url: https://example.github.io/example-lesson/
+  A hands-on introduction to using the Slurm workload manager on a shared
+  Linux cluster. The lesson covers cluster discovery, batch and interactive
+  jobs, monitoring and diagnosis, resource requests and accounting, and job
+  arrays, with optional extensions on efficient campaigns, scheduler
+  mechanics, and parallel hardware.
+repository-code: https://github.com/oer-particle-physics/slurm-workload-manager
+url: https://oer-particle-physics.github.io/slurm-workload-manager/
 license: CC-BY-4.0

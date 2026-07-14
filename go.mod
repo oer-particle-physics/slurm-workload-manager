@@ -1,4 +1,4 @@
-module github.com/oer-particle-physics/hugo-styles-template
+module github.com/oer-particle-physics/slurm-workload-manager
 
 go 1.26
 

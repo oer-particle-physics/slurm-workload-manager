@@ -3,4 +3,4 @@ title = "Glossary"
 weight = 40
 +++
 
-Glossary pages give recurring terms a short, stable definition.
+Definitions of the Slurm concepts used throughout the course.

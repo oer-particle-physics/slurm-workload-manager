@@ -1,6 +1,6 @@
-baseURL = "https://example.github.io/example-lesson/"
-title = "Hugo Styles Starter Lesson"
-locale = "en-US"
+baseURL = "https://oer-particle-physics.github.io/slurm-workload-manager/"
+title = "Slurm Workload Manager"
+locale = "en-GB"
 enableGitInfo = true
 disableKinds = ["taxonomy", "term", "RSS"]
 
@@ -36,18 +36,18 @@ disableKinds = ["taxonomy", "term", "RSS"]
       unsafe = true
 
 [params.banner]
-  key = "hugo-styles-template-welcome-v2"
-  message = "This site contains replaceable starter content for a new lesson."
+  key = "slurm-course-site-checklist-v1"
+  message = "Before submitting, complete the [site checklist](/learners/setup/#complete-the-site-checklist)."
 
 [params.lesson]
-  title = "Hugo Styles Starter Lesson"
-  tagline = "A small, adaptable example for writing your own lesson."
-  description = "Replace this sample with the topic, audience, and learning goals for your lesson."
-  contact = "team@example.org"
-  repo = "https://github.com/oer-particle-physics/hugo-styles-template"
-  docsRepo = "https://github.com/oer-particle-physics/hugo-styles-template"
+  title = "Slurm Workload Manager"
+  tagline = "From a first batch job to an efficient, diagnosable job array."
+  description = "A hands-on introduction to using Slurm on a shared Linux cluster. Learners discover local cluster policy, submit and diagnose jobs, request resources deliberately, inspect accounting data, and scale a workload with job arrays."
+  contact = "clemens.lange@cern.ch"
+  repo = "https://github.com/oer-particle-physics/slurm-workload-manager"
+  docsRepo = "https://github.com/oer-particle-physics/slurm-workload-manager"
   editBranch = "main"
-  copyrightHolder = "the authors"
+  copyrightHolder = "Clemens Lange"
   licenseName = "CC BY 4.0"
   licenseURL = "https://creativecommons.org/licenses/by/4.0/"
   lifecycle = "alpha"
@@ -140,6 +140,11 @@ disableKinds = ["taxonomy", "term", "RSS"]
     pageRef = "/profiles"
     weight = 50
   [[menus.main]]
+    name = "Instructor Notes"
+    parent = "resources"
+    url = "/instructors/instructor-notes/"
+    weight = 55
+  [[menus.main]]
     name = "All Images"
     parent = "resources"
     pageRef = "/extract-all-images"
@@ -151,7 +156,7 @@ disableKinds = ["taxonomy", "term", "RSS"]
       type = "search"
   [[menus.main]]
     name = "GitHub"
-    url = "https://github.com/oer-particle-physics/hugo-styles-template"
+    url = "https://github.com/oer-particle-physics/slurm-workload-manager"
     weight = 90
     [menus.main.params]
       icon = "github"

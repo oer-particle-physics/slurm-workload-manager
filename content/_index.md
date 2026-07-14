@@ -1,51 +1,52 @@
 +++
-title = "Hugo Styles Starter Lesson"
+title = "Slurm Workload Manager"
 layout = "hextra-home"
 +++
 
-{{< hextra/hero-badge link="episodes/01-write-your-first-episode/" >}}
-Replaceable starter content {{< icon name="arrow-circle-right" attributes="height=14" >}}
+{{< hextra/hero-badge link="episodes/01-slurm-model/" >}}
+Start with your local cluster {{< icon name="arrow-circle-right" attributes="height=14" >}}
 {{< /hextra/hero-badge >}}
 
 <div class="hx:mt-6 hx:mb-6">
 {{< hextra/hero-headline >}}
-Build your lesson&nbsp;
+Run research workloads&nbsp;
 <br class="hx:xl:block hx:hidden" />
-with Hugo Styles
+confidently with Slurm
 {{< /hextra/hero-headline >}}
 </div>
 
 <div class="hx:mb-12">
 {{< hextra/hero-subtitle >}}
-Preview this small example, adapt its first episode, and continue with your own material.
-Shared layouts and components come from `hugo-styles`; your lesson content stays here.
+Discover how your cluster is configured, submit and diagnose jobs, request the
+resources your application needs, and scale from one input to a job array.
 {{< /hextra/hero-subtitle >}}
 </div>
 
 <div class="hx:mb-6">
-{{< hextra/hero-button text="Write Your First Episode" link="episodes/01-write-your-first-episode/" >}}
+{{< hextra/hero-button text="Setup" link="learners/setup/" >}}
+{{< hextra/hero-button text="Start the Course" link="episodes/01-slurm-model/" >}}
 </div>
 
 <div class="hx:mt-6"></div>
 
 {{< hextra/feature-grid cols="3" >}}
 {{< hextra/feature-card
-  title="Preview"
-  subtitle="Install Hugo Extended and run the sample site locally."
+  title="Discover Your Cluster"
+  subtitle="Read partitions and policies without copying another site's settings."
   icon="book-open"
-  link="learners/setup/"
+  link="episodes/01-slurm-model/"
 >}}
 {{< hextra/feature-card
-  title="Adapt"
-  subtitle="Replace the example front matter and teaching content with your topic."
+  title="Diagnose and Tune"
+  subtitle="Follow a job from submission through accounting and improve its request."
   icon="academic-cap"
-  link="episodes/01-write-your-first-episode/"
+  link="episodes/03-monitor-diagnose/"
 >}}
 {{< hextra/feature-card
-  title="Continue"
-  subtitle="Create a second episode from the shared archetype when the first is ready."
+  title="Scale with Arrays"
+  subtitle="Turn the same small workload into a throttled, recoverable campaign."
   icon="sparkles"
-  link="episodes/01-write-your-first-episode/#create-your-next-episode"
+  link="episodes/05-job-arrays/"
 >}}
 {{< /hextra/feature-grid >}}
 

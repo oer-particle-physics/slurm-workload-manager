@@ -3,4 +3,5 @@ title = "Episodes"
 weight = 10
 +++
 
-This template includes one sample episode. Replace it with your own teaching sequence.
+The five numbered episodes form the required course. The remaining episodes are
+optional extensions for learners who want to go further.

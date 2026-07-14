@@ -4,4 +4,5 @@ weight = 30
 audience = "instructor"
 +++
 
-Example facilitation material to adapt or replace with your lesson.
+Preparation, pacing, fallback outputs, and cluster-adaptation guidance for
+teaching the Slurm course.

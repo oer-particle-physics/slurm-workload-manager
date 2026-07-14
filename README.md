@@ -1,37 +1,37 @@
-# Hugo Styles Lesson Template
+# Slurm Workload Manager
 
-Use this repository to start a lesson powered by the shared
-[`hugo-styles`](https://oer-particle-physics.github.io/hugo-styles/) module.
-The rendered site contains a short example that is meant to be replaced.
+This repository contains a hands-on course for researchers who are comfortable
+with a Linux shell but new to the Slurm workload manager. The required path
+takes learners from discovering a cluster's local policy to submitting,
+diagnosing, tuning, and scaling a small workload with a throttled job array.
 
-## Create your lesson
+The lesson is designed to be portable across Slurm clusters. Site-specific
+partition names, accounts, storage paths, and interactive policies are kept in
+a separate checklist rather than embedded in the examples.
 
-1. **Preview the site.** Install [Hugo Extended](https://gohugo.io/installation/), then run:
+## Preview the lesson
 
-   ```bash
-   hugo server
-   ```
+Install [Hugo Extended](https://gohugo.io/installation/) and run:
 
-2. **Configure the lesson.** Replace the example values in `hugo.toml`, including
-   `baseURL`, `title`, `[params.lesson]`, and the GitHub menu URL. Then update
-   `CITATION.cff` and `AUTHORS`. Edit `LICENSE.md` only if your licensing differs from
-   the template.
+```bash
+hugo server
+```
 
-3. **Replace the sample content.** Start with
-   `content/episodes/01-write-your-first-episode/`, then adapt or remove the example
-   setup, instructor notes, glossary, profile, and reference pages. The
-   [Authoring Guide](https://oer-particle-physics.github.io/hugo-styles/docs/authoring/)
-   explains the content structure.
+The shared layouts are vendored under `_vendor/`, so a normal local build does
+not need Go or network access.
 
-4. **Publish the site.** Set `baseURL` to `https://<account>.github.io/<repo>/`, enable
-   GitHub Pages with **GitHub Actions** as its source, and push `main`. See the
-   [Deployment Guide](https://oer-particle-physics.github.io/hugo-styles/docs/deployment/)
-   for details.
+## Course structure
 
-For field and component reference, use the shared [Front Matter](https://oer-particle-physics.github.io/hugo-styles/docs/frontmatter/) and [Components](https://oer-particle-physics.github.io/hugo-styles/docs/components/) pages.
+- five required, cumulative episodes (about 2 hours 15 minutes)
+- three optional extensions on campaigns, scheduling, and parallel hardware
+- learner setup and downloadable starter files
+- instructor notes with pacing and cluster-adaptation guidance
+- generated all-in-one, key-points, glossary, and external-link pages
 
-## Receive Hugo Styles updates
+## Maintainer
 
-The scheduled **Refresh vendored Hugo modules** workflow updates the pinned module, managed files, and `_vendor/`, then opens a pull request for review. Configure the `WORKFLOW_SYNC_TOKEN` repository secret as described in the [Update Guide](https://oer-particle-physics.github.io/hugo-styles/docs/updates/) so the workflow can update managed workflow files.
+Clemens Lange
 
-Keep `_vendor/` committed. It lets lesson authors build locally with Hugo Extended alone; Go is not required for normal authoring.
+## Licence
+
+The lesson is released under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).

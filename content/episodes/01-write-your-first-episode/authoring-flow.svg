@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 260" role="img" aria-labelledby="title description">
+  <title id="title">The lesson authoring loop</title>
+  <desc id="description">Edit an episode, preview the site, and add the next episode.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#2563eb"/>
+    </marker>
+  </defs>
+  <rect width="900" height="260" rx="24" fill="#f8fafc"/>
+  <g fill="#ffffff" stroke="#2563eb" stroke-width="4">
+    <rect x="45" y="70" width="220" height="120" rx="18"/>
+    <rect x="340" y="70" width="220" height="120" rx="18"/>
+    <rect x="635" y="70" width="220" height="120" rx="18"/>
+  </g>
+  <g fill="none" stroke="#2563eb" stroke-width="5" marker-end="url(#arrow)">
+    <path d="M 275 130 H 325"/>
+    <path d="M 570 130 H 620"/>
+  </g>
+  <g fill="#0f172a" font-family="system-ui, sans-serif" text-anchor="middle">
+    <text x="155" y="120" font-size="24" font-weight="700">Edit</text>
+    <text x="155" y="153" font-size="18">front matter and body</text>
+    <text x="450" y="120" font-size="24" font-weight="700">Preview</text>
+    <text x="450" y="153" font-size="18">check both audiences</text>
+    <text x="745" y="120" font-size="24" font-weight="700">Continue</text>
+    <text x="745" y="153" font-size="18">add the next episode</text>
+  </g>
+</svg>

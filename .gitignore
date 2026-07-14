@@ -1,0 +1,9 @@
+/public/
+/resources/_gen/
+/.hugo_build.lock
+/.hugo-versioned-cache/
+/.cache/
+/.lycheecache
+/.DS_Store
+/.idea/
+/.vscode/

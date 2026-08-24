@@ -1,4 +1,4 @@
-# x-release-please-version: v0.5.4
+# x-release-please-version: v0.5.7
 name: Reusable Refresh Vendored Modules
 
 on:
@@ -48,7 +48,7 @@ jobs:
           extended: true
 
       - name: Setup Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@v7
         with:
           go-version-file: ${{ inputs.go-version-file }}
 
@@ -60,6 +60,23 @@ jobs:
         if: ${{ inputs.verify-command != '' }}
         shell: bash
         run: ${{ inputs.verify-command }}
+
+      - name: Check workflow update credentials
+        shell: bash
+        env:
+          WORKFLOW_SYNC_TOKEN: ${{ secrets.WORKFLOW_SYNC_TOKEN }}
+        run: |
+          if [[ -n "${WORKFLOW_SYNC_TOKEN}" ]]; then
+            exit 0
+          fi
+
+          workflow_changes="$(git -C "${GITHUB_WORKSPACE}" status --porcelain --untracked-files=all -- .github/workflows)"
+          if [[ -n "${workflow_changes}" ]]; then
+            echo "::error title=WORKFLOW_SYNC_TOKEN required::The refresh changed files under .github/workflows/, but the WORKFLOW_SYNC_TOKEN repository secret is not configured. Add a fine-grained personal access token or GitHub App installation token with Contents, Pull requests, and Workflows read and write permissions. See https://oer-particle-physics.github.io/hugo-styles/docs/updates/"
+            exit 1
+          fi
+
+          echo "::warning title=WORKFLOW_SYNC_TOKEN not configured::No files under .github/workflows/ changed, so this refresh can continue with GITHUB_TOKEN. Configure WORKFLOW_SYNC_TOKEN before a future workflow update. See https://oer-particle-physics.github.io/hugo-styles/docs/updates/"
 
       - name: Create pull request
         uses: peter-evans/create-pull-request@v8

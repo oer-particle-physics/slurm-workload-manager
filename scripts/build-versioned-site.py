@@ -224,7 +224,29 @@ def load_hugo_config(
     hugo_bin: str,
     base_url: str | None,
     cache_dir: Path,
+    *,
+    allow_missing_config_files: bool = False,
 ) -> dict:
+    config_files = [item.strip() for item in config_name.split(",") if item.strip()]
+    if not config_files:
+        raise BuildError("At least one Hugo config file must be specified.")
+
+    available_config_files: list[str] = []
+    missing_config_files: list[str] = []
+    for config_file in config_files:
+        path = Path(config_file)
+        candidate = path if path.is_absolute() else site_root / path
+        if candidate.is_file():
+            available_config_files.append(config_file)
+        else:
+            missing_config_files.append(config_file)
+
+    if missing_config_files and not allow_missing_config_files:
+        missing = ", ".join(missing_config_files)
+        raise BuildError(f"Hugo config file not found in {site_root}: {missing}")
+    if not available_config_files:
+        raise BuildError(f"No Hugo config files found in {site_root}: {config_name}")
+
     command = [
         hugo_bin,
         "config",
@@ -232,7 +254,7 @@ def load_hugo_config(
         "--format",
         "json",
         "--config",
-        config_name,
+        ",".join(available_config_files),
         "--cacheDir",
         str(cache_dir),
     ]
@@ -634,6 +656,7 @@ def target_config(
         hugo_bin,
         None,
         cache_dir,
+        allow_missing_config_files=True,
     )
     return apply_version_menu(config, versioning, menu_targets)
 

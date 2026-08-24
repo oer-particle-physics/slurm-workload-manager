@@ -1,10 +1,12 @@
 # Managed by hugo-styles.
-# x-release-please-version: v0.5.4
+# x-release-please-version: v0.5.7
 name: Deploy lesson
 
 on:
   push:
-    branches: ["main"]
+    # Trigger branch pushes so the job can compare against the repository's
+    # current default branch. Defining only branches also excludes tag pushes.
+    branches: ["**"]
   pull_request:
 
 permissions:
@@ -18,6 +20,9 @@ concurrency:
 
 jobs:
   pages:
+    if: >-
+      github.event_name == 'pull_request' ||
+      github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
     uses: ./.github/workflows/reusable-pages.yml
     with:
       site-root: .

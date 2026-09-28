@@ -1,5 +1,5 @@
 # Managed by hugo-styles.
-# x-release-please-version: v0.5.7
+# x-release-please-version: v0.7.0
 name: Deploy lesson
 
 on:
@@ -32,6 +32,7 @@ jobs:
         ./scripts/sync-template-files.sh
         hugo mod vendor
       drift-check-paths: |
+        .github/workflows/cffconvert.yml
         .github/workflows/pages.yml
         .github/workflows/refresh-vendored-modules.yml
         .github/workflows/reusable-pages.yml
@@ -40,6 +41,7 @@ jobs:
         go.sum
         lychee.toml
         scripts/build-versioned-site.py
+        scripts/upgrade-report.py
         scripts/sync-template-files.sh
         _vendor
       validation-command: |

@@ -1,5 +1,5 @@
-# x-release-please-version: v0.5.7
-name: Reusable Refresh Vendored Modules
+# x-release-please-version: v0.7.0
+name: Reusable Update hugo-styles
 
 on:
   workflow_call:
@@ -20,9 +20,11 @@ on:
         type: string
         default: "chore/refresh-vendored-hugo-modules"
       pr-title:
+        description: Optional title override; otherwise include the installed and target versions.
         type: string
-        default: "chore: refresh vendored Hugo modules"
+        default: ""
       pr-body:
+        description: Additional context appended to the generated upgrade report.
         type: string
         default: ""
       pr-labels:
@@ -52,14 +54,55 @@ jobs:
         with:
           go-version-file: ${{ inputs.go-version-file }}
 
+      - name: Record installed hugo-styles version
+        id: installed
+        shell: bash
+        run: |
+          module_version="$(go list -m -f '{{.Version}}' github.com/oer-particle-physics/hugo-styles)" || module_version=unknown
+          echo "version=${module_version:-unknown}" >> "${GITHUB_OUTPUT}"
+
       - name: Refresh module metadata and managed files
         shell: bash
         run: ${{ inputs.refresh-command }}
 
+      - name: Prepare upgrade report
+        id: report
+        shell: bash
+        env:
+          OLD_VERSION: ${{ steps.installed.outputs.version }}
+          PR_TITLE: ${{ inputs.pr-title }}
+          PR_BODY: ${{ inputs.pr-body }}
+          UPGRADE_REPORT_PATH: ${{ runner.temp }}/hugo-styles-upgrade.md
+        run: |
+          go mod download github.com/oer-particle-physics/hugo-styles
+          module_dir="$(go list -m -f '{{.Dir}}' github.com/oer-particle-physics/hugo-styles)"
+          module_version="$(go list -m -f '{{.Version}}' github.com/oer-particle-physics/hugo-styles)"
+          python3 scripts/upgrade-report.py report \
+            --module-root "${module_dir}" \
+            --old-version "${OLD_VERSION}" \
+            --new-version "${module_version:-unknown}" \
+            --output "${UPGRADE_REPORT_PATH}" \
+            --github-output "${GITHUB_OUTPUT}" \
+            --title "${PR_TITLE}" \
+            --extra-body "${PR_BODY}"
+
       - name: Verify refreshed site build
+        id: verify
         if: ${{ inputs.verify-command != '' }}
         shell: bash
         run: ${{ inputs.verify-command }}
+
+      - name: Publish upgrade summary
+        if: ${{ always() && steps.report.outcome == 'success' }}
+        shell: bash
+        env:
+          VALIDATION_OUTCOME: ${{ steps.verify.outcome }}
+          UPGRADE_REPORT_PATH: ${{ runner.temp }}/hugo-styles-upgrade.md
+        run: |
+          python3 scripts/upgrade-report.py finalize \
+            --report "${UPGRADE_REPORT_PATH}" \
+            --validation "${VALIDATION_OUTCOME}" \
+            --summary "${GITHUB_STEP_SUMMARY}"
 
       - name: Check workflow update credentials
         shell: bash
@@ -84,7 +127,7 @@ jobs:
           token: ${{ secrets.WORKFLOW_SYNC_TOKEN || github.token }}
           branch: ${{ inputs.pr-branch }}
           delete-branch: true
-          commit-message: ${{ inputs.pr-title }}
-          title: ${{ inputs.pr-title }}
-          body: ${{ inputs.pr-body }}
+          commit-message: ${{ steps.report.outputs.title }}
+          title: ${{ steps.report.outputs.title }}
+          body-path: ${{ runner.temp }}/hugo-styles-upgrade.md
           labels: ${{ inputs.pr-labels }}

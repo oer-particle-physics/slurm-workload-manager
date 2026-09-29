@@ -140,11 +140,6 @@ disableKinds = ["taxonomy", "term", "RSS"]
     url = "/instructors/instructor-notes/"
     weight = 55
   [[menus.main]]
-    name = "All Images"
-    parent = "resources"
-    pageRef = "/extract-all-images"
-    weight = 60
-  [[menus.main]]
     name = "Search"
     weight = 80
     [menus.main.params]

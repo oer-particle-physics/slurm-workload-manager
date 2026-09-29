@@ -1,6 +1,7 @@
 +++
 title = "Resource Requests and Efficient Use"
-weight = 40
+weight = 50
+aliases = ["/episodes/04-resources-efficiency/"]
 teaching = 20
 exercises = 10
 questions = [
@@ -9,33 +10,32 @@ questions = [
   "Why can a realistic request start sooner and use the cluster better?"
 ]
 objectives = [
-  "Choose resource options for serial and shared-node parallel applications.",
+  "Choose resource options for programs using one CPU or several CPUs on one node.",
   "Relate `--ntasks` and `--cpus-per-task` to application processes and workers.",
   "Interpret elapsed time, total CPU time, requested memory, and maximum resident memory from `sacct`.",
-  "Revise a completed job's request while retaining practical headroom.",
-  "Apply portable shared and node-local storage principles."
+  "Use a completed job's measurements to improve the next request, allowing extra time and memory for variation.",
+  "Choose storage that keeps inputs accessible and results available after the job ends."
 ]
 keypoints = [
-  "`--time` is an enforced upper bound; `--mem` and CPU options are resource requests, not performance hints.",
+  "`--time` limits how long the job can run; memory and CPU options tell Slurm which resources to assign to it.",
   "Use one task with one CPU for a serial program and one task with multiple CPUs for a threaded or shared-node worker program.",
-  "Tune from repeated accounting evidence and keep justified headroom rather than copying defaults or requesting the maximum.",
-  "Realistic requests give the scheduler more placement options and reduce wasted shared resources.",
+  "Adjust requests using measurements from several runs, allowing extra time and memory for variation.",
+  "Realistic requests can fit on more available nodes or into shorter gaps in the schedule, and reduce unused allocations.",
   "Storage paths are site-specific: discover which filesystems are shared or node-local and follow their cleanup policy."
 ]
 +++
 
-Slurm cannot observe the future. At submission time, you describe the largest
-allocation the job may need. The scheduler must reserve that combination of
-time, CPUs, memory, and other resources even if the application uses only a
-small fraction of it.
+When you submit a job, Slurm uses your request to find nodes with enough CPUs,
+memory, and other resources for the requested time. It plans for the full
+request even if your program will use only a small fraction of it.
 
-Right-sizing is therefore an iterative research skill:
+To choose suitable amounts, work through a few test runs:
 
 1. make a small, safe initial request
 1. run a representative test
-1. inspect what happened
-1. add justified headroom
-1. repeat before launching a campaign
+1. compare the resources requested with those actually used
+1. allow some extra time and memory for differences between runs
+1. repeat before submitting many jobs
 
 ## Walltime Is a Limit
 
@@ -53,8 +53,9 @@ the scheduler more gaps in which the job can fit. A one-hour job submitted with
 a seven-day limit is much harder to place as short work, even though it will
 eventually finish early.
 
-Keep enough headroom for normal variation, I/O, and cleanup. “As short as
-possible” is not the same as “shorter than the job can reliably finish”.
+Allow extra time for differences between inputs, reading and writing files,
+and cleanup. This margin is often called **headroom**. Choose a limit that
+lets the job finish reliably.
 
 ## Memory Is Part of the Allocation
 
@@ -66,8 +67,8 @@ For the single-node jobs in this course:
 
 requests memory for the job on its node. Slurm also supports
 `--mem-per-cpu`, which scales the request with allocated CPUs. These options
-are mutually exclusive, and local defaults and enforcement differ. Use the
-form recommended by your site and be explicit for memory-sensitive work.
+cannot be used together. Defaults and the way limits are enforced differ
+between clusters, so use the form recommended by your site.
 
 The quantity most useful for tuning is normally maximum **resident** memory:
 physical RAM occupied at the measured peak. Virtual address space can be much
@@ -80,28 +81,35 @@ The most important beginner distinction is:
 - `--ntasks`: how many application processes Slurm should be able to launch
 - `--cpus-per-task`: how many CPUs each task needs for threads or local workers
 
-Common shapes are:
+Common combinations are:
 
-| Application shape | Typical request |
+| How the program runs | Typical request |
 |---|---|
 | Serial program | `--ntasks=1 --cpus-per-task=1` |
 | One threaded process | `--ntasks=1 --cpus-per-task=N` |
 | One process with N local worker processes | `--ntasks=1 --cpus-per-task=N` |
-| MPI program | commonly `--ntasks=N --cpus-per-task=1` |
-| Hybrid MPI + threads | multiple tasks and multiple CPUs per task |
 
-The last two shapes depend on MPI and site configuration and are treated in an
-optional episode. For now, stay within one node and one Slurm task.
+These examples stay within one node and one Slurm task. Applications that use
+[MPI or GPUs]({{< relref "/reference" >}}#mpi-and-gpu-applications) need additional
+application and site instructions.
 
 Requesting four CPUs does not make a serial program four times faster. The
 application must actually create threads or workers and must be told how many
-to use. Conversely, launching four workers after requesting one CPU
-oversubscribes the allocation and competes for a resource the job did not
-request.
+to use. Launching four workers after requesting one CPU makes them compete for
+that CPU. Running more workers than the allocated CPUs can support is called
+**oversubscription**.
+
+{{< callout type="note" title="What does Slurm count as a CPU?" >}}
+A Slurm CPU can represent a physical core or one hardware thread of a core,
+depending on cluster configuration. Hardware threads on the same core share
+its execution resources, so four allocated CPUs do not necessarily mean four
+physical cores. Check your site's definition when interpreting CPU requests
+and accounting records.
+{{< /callout >}}
 
 The official [CPU Management Guide](https://slurm.schedmd.com/cpu_management.html)
-documents the interactions in detail. Those interactions are constrained by
-the site's Slurm configuration, so start with these explicit common shapes.
+documents these options in detail. The combinations above are a starting
+point; check your site's instructions for how to use them on your cluster.
 
 ## Run the Course Workload with Four Workers
 
@@ -145,11 +153,11 @@ cat results/parallel-check.json
 Both should report four workers. This verifies the resource count reached the
 application; it does not by itself prove that four workers are faster for a
 real scientific program. Benchmark representative inputs before choosing a
-parallel shape.
+combination of tasks and CPUs.
 
 ## Read the Accounting Evidence
 
-Request both allocation and use fields:
+Show both the resources assigned to the job and the amounts it used:
 
 ```bash
 sacct -j "$PARALLEL_ID" \
@@ -185,19 +193,20 @@ A useful CPU-efficiency idea is:
 TotalCPU / (Elapsed × AllocCPUS)
 ```
 
-Do not expect an exact 100%. Startup, I/O, serial sections, load imbalance,
-measurement resolution, and CPU topology all matter. The question is whether
-the observation is consistent with the program's expected behaviour.
+Do not expect an exact 100%. CPUs can wait while the program starts, reads or
+writes files, or finishes work that only one worker can do. Workers may also
+finish at different times. Measurement precision and the way Slurm counts CPUs
+affect the result. Compare it with how you expect the program to use its CPUs.
 
 `MaxRSS` is also sampled and can miss short peaks. Keep headroom for input
-variation and interpreter or library overhead; do not set the next request
-equal to one observed byte count.
+variation and memory used by Python or its libraries; do not set the next
+request equal to a single measured peak.
 
-{{< callout type="note" title="Short training jobs are noisy measurements" >}}
+{{< callout type="note" title="Measurements from short jobs can be imprecise" >}}
 This course workload is intentionally brief. CPU and memory accounting may be
-coarse, delayed, or absent for very short steps. The method—measure a
-representative job, compare request and use, then tune—is more important than
-the exact training number.
+imprecise, delayed, or absent for very short steps. Practise measuring a
+representative job, comparing its request with its use, and adjusting the next
+request. Use several runs before drawing conclusions from the numbers.
 {{< /callout >}}
 
 ## Demonstrate an Over-Request
@@ -216,9 +225,9 @@ srun python3 particle_demo.py \
 
 Submit it and compare `AllocCPUS`, `Elapsed`, and `TotalCPU` with the four-worker
 job. The one-worker application cannot use the other three allocated CPUs. A
-real campaign of such jobs would reserve capacity it does not use.
+large set of such jobs would tie up CPUs that the programs do not use.
 
-## Storage: Learn the Site Before Staging Data
+## Storage: Check Where Your Files Belong {#storage-learn-the-site-before-staging-data}
 
 Slurm allocates compute resources; it does not automatically move your input
 and output files. A cluster commonly offers some combination of:
@@ -227,15 +236,16 @@ and output files. A cluster commonly offers some combination of:
 - node-local temporary storage, visible only within one compute node
 - object, tape, or experiment-specific storage accessed through other tools
 
-Portable principles are:
+Follow these steps using the paths recommended by your site:
 
-1. Keep the source script and durable outputs on approved shared/project
-   storage.
-1. Use node-local storage for intensive temporary I/O only when local
-   documentation recommends it.
+1. Keep the script and results you need after the job ends on approved shared
+   or project storage.
+1. Use node-local storage for temporary files that the program reads or writes
+   frequently only when local documentation recommends it.
 1. Create a job-specific temporary directory and set `TMPDIR` if the site asks
    you to.
-1. Copy validated results out before cleanup.
+1. Check the results and copy them to shared storage before deleting temporary
+   files.
 1. Clean temporary files even when the script exits unexpectedly.
 
 A site that defines a suitable `$TMPDIR` may recommend a pattern like:
@@ -250,11 +260,13 @@ is defined for jobs, has enough space, is node-local if that is what you need,
 and permits this cleanup pattern.
 
 {{< callout type="note" title="PSI storage example" >}}
-The PSI Tier-3 guidance recommends job-specific directories on its node-local
-`/scratch`, setting `TMPDIR`, performing intensive I/O locally, copying durable
-results to shared storage, and cleaning up. The transferable lesson is the
-stage/use/copy/clean lifecycle; `/scratch` itself is a PSI path, not a Slurm
-standard.
+The [PSI Tier-3 storage guide](https://tier3.pages.psi.ch/storage/Tier3Storage/)
+recommends using node-local `/scratch` for intensive I/O and moving completed
+results to their final storage. Its
+[CPU job examples](https://tier3.pages.psi.ch/batch-jobs/CPUExamples/)
+show how to create a directory for each job, set `TMPDIR`, and clean up.
+Follow that sequence using paths documented for your cluster; Slurm does not
+guarantee a `/scratch` directory.
 {{< /callout >}}
 
 {{< challenge title="Revise a fictional request" >}}
@@ -285,7 +297,7 @@ considered. Do not claim four CPUs made the serial job faster.
 {{< instructor >}}
 The Python workload creates threads and reads `SLURM_CPUS_PER_TASK`, but the
 short run is not intended as a scaling benchmark. Focus the debrief on matching
-the application's execution model to the request and on using multiple
-observations. If accounting is sparse, use the result's worker count plus a
-prepared `sacct` record.
+the number of application workers to the requested CPUs and on using multiple
+measurements. If accounting has few measurements, use the result's worker
+count plus a prepared `sacct` record.
 {{< /instructor >}}

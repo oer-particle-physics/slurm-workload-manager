@@ -4,5 +4,5 @@ summary = "The nodes, CPUs, memory, GPUs, and other resources granted to a Slurm
 weight = 10
 +++
 
-A job request receives an allocation when Slurm can satisfy it. Job steps run
-inside that allocation. A pending job has a request but not yet an allocation.
+A job receives an allocation when Slurm assigns the requested resources to it.
+Job steps run using those resources. A pending job is still waiting for them.

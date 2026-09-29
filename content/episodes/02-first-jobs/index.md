@@ -1,35 +1,38 @@
 +++
-title = "First Batch and Interactive Jobs"
+title = "First Batch Job"
 weight = 20
 teaching = 15
 exercises = 10
 questions = [
   "How do I describe and submit a repeatable batch job?",
   "Where do standard output and error go?",
-  "When should I use an interactive allocation instead?"
+  "How do I confirm that the job finished successfully?"
 ]
 objectives = [
   "Write a batch script with explicit time, CPU, memory, and log settings.",
   "Submit the script and connect its job ID to output and result files.",
   "Inspect useful Slurm environment variables inside a job.",
-  "Use a short interactive allocation for testing and release it afterwards."
+  "Confirm completion and verify that the result belongs to the submitted job."
 ]
 keypoints = [
   "`sbatch` submits a script and returns immediately with a job ID; it does not wait for the job to run.",
-  "Place `#SBATCH` directives before executable commands and keep site-specific options outside the portable script.",
+  "Place `#SBATCH` directives before executable commands and keep cluster-specific options in `site-settings.sh`.",
   "Create log directories before submission because Slurm opens log files before the script body runs.",
-  "Use interactive allocations for short tests and debugging, and batch scripts for normal repeatable work."
+  "Confirm the job has completed before looking for its result; time spent waiting in the queue is separate from runtime."
 ]
 +++
+
+Use the `site-settings.sh` and site note you completed in
+[How Slurm and Your Cluster Work]({{< relref "/episodes/01-slurm-model#portable-script-local-submission" >}}).
 
 A batch script is an ordinary shell script plus resource and output options for
 Slurm. Submitting the script creates a job request. Slurm may run it immediately
 or keep it pending until the requested resources are available.
 
 The [official `sbatch` documentation](https://slurm.schedmd.com/sbatch.html)
-notes that submission returns once the controller has accepted the script and
-assigned a job ID. That ID is your handle for monitoring, cancellation,
-accounting, logs, and support requests.
+notes that submission returns once Slurm has accepted the script and assigned
+a job ID. Use that ID to check the job's progress, cancel it, find its records
+and logs, or ask the support team for help.
 
 ## Write the First Script
 
@@ -59,12 +62,12 @@ srun python3 particle_demo.py \
   --output results/dyjets_chunk_001.json
 ```
 
-The directives describe a small, single-task job:
+The `#SBATCH` lines, called **directives**, tell Slurm what the job needs:
 
 | Directive | Meaning |
 |---|---|
 | `--job-name` | A recognisable label for queue and accounting displays |
-| `--time` | Maximum walltime, not an estimate printed for information |
+| `--time` | Maximum runtime (walltime), after which Slurm stops the job |
 | `--ntasks=1` | One application process launched as a Slurm task |
 | `--cpus-per-task=1` | One CPU available to that task |
 | `--mem=256M` | Memory requested for the job on its node |
@@ -77,6 +80,10 @@ earlier log.
 `set -euo pipefail` makes many scripting errors visible instead of allowing the
 script to continue silently. It is Bash syntax, which is why the first line
 selects Bash explicitly.
+
+If your site note lists module or environment commands needed for Python on
+compute nodes, add them before the `srun python3` command. Keep all `#SBATCH`
+directives above those commands.
 
 {{< callout type="warning" title="Directive syntax is not shell syntax" >}}
 Slurm reads `#SBATCH` lines before the shell runs. Shell variables such as
@@ -107,14 +114,60 @@ Your number will differ. Record it as `JOB_ID` for the commands below:
 
 ```bash
 JOB_ID=12345
+```
+
+## Wait for the Job to Finish
+
+Check the job's current state:
+
+```bash
 squeue -j "$JOB_ID"
 ```
 
-If the queue is quiet, the job may finish before `squeue` displays it. That is
-not an error; `squeue` normally shows pending and running jobs, while `sacct`
-will show the completed record in the next episode.
+The `ST` column tells you what to do next:
 
-Once the job finishes, inspect its files:
+- `PD` (pending): the job is waiting to start. The log and result files may
+  not exist yet. The final column gives the current reason, such as
+  `Resources` or `Priority`.
+- `R` (running): the job has started. Logs may still be incomplete, and the
+  demonstration program writes its JSON result only after finishing its work.
+
+An eight-second workload can wait several minutes or longer before starting.
+Its `--time=00:02:00` limit applies to runtime, not time spent waiting in the
+queue. Wait and check again manually; do not submit another copy just because
+the files are missing.
+
+To see all your pending and running jobs, use:
+
+```bash
+squeue --me
+```
+
+On older Slurm releases where `--me` is unavailable, use `squeue -u "$USER"`.
+
+If `squeue` shows no job row, or reports an invalid job ID, the job may already
+have finished. Disappearing from the queue does not tell you whether it
+succeeded. Check its accounting record:
+
+```bash
+sacct -j "$JOB_ID" --format=JobID,State,ExitCode
+```
+
+Look at the row whose `JobID` matches your number exactly. For this script,
+expect `COMPLETED` and `0:0`, meaning it finished with exit status zero and no
+terminating signal. Rows ending in `.batch`, `.extern`, or `.0` describe job
+steps. Accounting updates can take a short time; if no record appears yet,
+wait briefly and check again. If accounting is unavailable on your cluster,
+use `scontrol show job "$JOB_ID"` to check `JobState` and `ExitCode` while
+Slurm still retains the job record.
+
+The next episode explains [job states and diagnosis]({{< relref "/episodes/03-monitor-diagnose" >}})
+in more detail; the [official `sacct` documentation](https://slurm.schedmd.com/sacct.html)
+describes the accounting fields.
+
+## Inspect the Output
+
+After confirming completion, inspect the files from your course directory:
 
 ```bash
 ls -l logs results
@@ -124,20 +177,33 @@ cat results/dyjets_chunk_001.json
 ```
 
 An empty error file is normal. The JSON result should now contain the real job
-ID and the hostname of a compute node.
+ID and the hostname of a compute node. Check that its job ID matches the
+submission you are inspecting, especially if you have run this sample before.
+
+{{< callout type="note" title="If files are still missing" >}}
+If the job failed, inspect any available error log and follow the diagnosis
+steps in the next episode. If the logs are missing too, run
+`scontrol show job "$JOB_ID"` and inspect `WorkDir`, `StdOut`, and `StdErr`.
+These show where the job ran and where Slurm was asked to write the logs.
+Compare `WorkDir` with `pwd`: by default, relative paths use the directory
+from which you submitted the job. That directory must also be accessible and
+writable from compute nodes. For a completed job, check these paths before
+assuming the files are missing altogether.
+{{< /callout >}}
 
 ## Allocation, Script, and Step
 
 This one submission demonstrates all three levels:
 
 1. `sbatch` asks Slurm for a job allocation.
-1. Slurm runs one copy of `first-job.sh` on the batch host in that allocation.
+1. Slurm runs one copy of `first-job.sh` on one of the allocated compute nodes.
 1. `srun` launches the Python program as a job step.
 
 For a simple serial job, many clusters also allow the script to run
-`python3 ...` directly. Using `srun` here makes the allocation/step distinction
-visible and prepares the script for more explicit task launching later. Follow
-local guidance when an application or MPI implementation has its own launcher.
+`python3 ...` directly. Here, `srun` starts the program as a job step within
+the resources already assigned to the job. Later examples use it to launch
+multiple tasks. Follow local guidance when an application or MPI installation
+needs a different launch command.
 
 ## Command-Line Options Override the Script
 
@@ -153,53 +219,6 @@ sbatch "${SLURM_SITE_ARGS[@]}" \
 Options supplied to `sbatch` override matching `#SBATCH` directives. This is
 also how `site-settings.sh` supplies the local partition, account, QoS, or
 reservation.
-
-## A Short Interactive Allocation
-
-Interactive allocations are useful for checking an environment, reproducing a
-failure, or testing a command briefly on a compute node. They still consume
-shared resources and should be given realistic limits.
-
-If your site permits the standard Slurm interface, request a short allocation:
-
-```bash
-source site-settings.sh
-salloc "${SLURM_SITE_ARGS[@]}" \
-  --time=00:05:00 \
-  --ntasks=1 \
-  --cpus-per-task=1 \
-  --mem=256M
-```
-
-After Slurm grants it, launch an interactive shell as a job step:
-
-```bash
-srun --pty bash
-hostname
-echo "$SLURM_JOB_ID"
-python3 particle_demo.py \
-  --sample interactive-check \
-  --seconds 1 \
-  --memory-mib 16 \
-  --output results/interactive-check.json
-exit
-```
-
-You are now back in the shell started by `salloc`. Release the allocation:
-
-```bash
-exit
-```
-
-Look for `Relinquishing job allocation` or confirm with `squeue --me` that the
-interactive job is gone. Never leave an interactive allocation idle.
-
-{{< callout type="note" title="Interactive access is local policy" >}}
-Some sites provide a dedicated partition, reservation, `srun --pty` command,
-wrapper, or web portal. Use the local recipe instead of forcing the commands
-above. The portable concept is an explicitly limited Slurm allocation used for
-short interactive work.
-{{< /callout >}}
 
 {{< challenge title="Submit a second sample" >}}
 Without changing the resource directives, edit the application arguments so a
@@ -235,8 +254,15 @@ batch step can fail before it reaches `mkdir`.
 {{< /solution >}}
 {{< /challenge >}}
 
+## Next Steps {#a-short-interactive-allocation}
+
+Continue with [Monitoring, Control, and Diagnosis]({{< relref "/episodes/03-monitor-diagnose" >}})
+to investigate waiting jobs, cancel work, and repair a failure. Interactive
+allocations follow in their own episode,
+[Interactive Work on Compute Nodes]({{< relref "/episodes/04-interactive-jobs" >}}).
+
 {{< instructor >}}
-Fast jobs may disappear from `squeue` before learners see them. Treat that as a
-transition to accounting, not as a failure. Keep one prepared output log and
-one completed job ID available in case the training partition is delayed.
+Fast jobs may disappear from `squeue` before learners see them. Show how to
+find their records with `sacct`. Keep one prepared output log and one completed
+job ID available in case the training partition is delayed.
 {{< /instructor >}}

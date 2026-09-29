@@ -1,8 +1,9 @@
 +++
 title = "Fair Share"
-summary = "A site-configured priority contribution comparing entitled and historical resource use."
+summary = "A factor in job priority that compares a user's or project's assigned share of resources with past usage."
 weight = 40
 +++
 
-Fair-share hierarchy, decay, and weighting are local policy. It is one possible
-factor in multifactor priority, not a universal score.
+Each site decides how shares are divided among projects and users, how much
+older usage still counts, and how much fair share affects job priority. Other
+priority factors can also affect which job runs next.

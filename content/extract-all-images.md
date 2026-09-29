@@ -6,4 +6,4 @@ audience = "instructor"
 excludeSearch = true
 +++
 
-This page aggregates lesson images for instructors.
+This page collects the lesson images in one place for instructors.

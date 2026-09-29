@@ -1,6 +1,6 @@
 +++
 title = "Compute Node"
-summary = "A cluster computer on which Slurm runs allocated workloads."
+summary = "A cluster computer on which Slurm runs jobs."
 weight = 30
 +++
 

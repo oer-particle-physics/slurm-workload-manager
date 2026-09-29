@@ -36,13 +36,13 @@ disableKinds = ["taxonomy", "term", "RSS"]
       unsafe = true
 
 [params.banner]
-  key = "slurm-course-site-checklist-v1"
-  message = "Before submitting, complete the [site checklist](/learners/setup/#complete-the-site-checklist)."
+  key = "slurm-course-submission-settings-v2"
+  message = "Before submitting, complete your [submission settings in episode 1](/episodes/01-slurm-model/#portable-script-local-submission)."
 
 [params.lesson]
   title = "Slurm Workload Manager"
-  tagline = "From a first batch job to an efficient, diagnosable job array."
-  description = "A hands-on introduction to using Slurm on a shared Linux cluster. Learners discover local cluster policy, submit and diagnose jobs, request resources deliberately, inspect accounting data, and scale a workload with job arrays."
+  tagline = "From your first batch job to processing many inputs with job arrays."
+  description = "A hands-on introduction to using Slurm on a shared Linux cluster. Learn your cluster's settings, submit jobs, diagnose failures, adjust CPU, memory, and time requests, and process many inputs with job arrays."
   contact = "clemens.lange@cern.ch"
   repo = "https://github.com/oer-particle-physics/slurm-workload-manager"
   docsRepo = "https://github.com/oer-particle-physics/slurm-workload-manager"
@@ -134,11 +134,6 @@ disableKinds = ["taxonomy", "term", "RSS"]
     parent = "resources"
     pageRef = "/glossary"
     weight = 40
-  [[menus.main]]
-    name = "Profiles"
-    parent = "resources"
-    pageRef = "/profiles"
-    weight = 50
   [[menus.main]]
     name = "Instructor Notes"
     parent = "resources"

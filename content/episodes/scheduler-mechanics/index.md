@@ -15,31 +15,31 @@ objectives = [
   "Interpret fair-share and QoS information without assuming another site's policy."
 ]
 keypoints = [
-  "Scheduling combines eligibility, policy, priority, and currently available resources; it is not generally FIFO.",
+  "Slurm considers which jobs meet the cluster's rules, their priorities, and the resources available. Jobs do not necessarily start in submission order.",
   "Multifactor priority weights are configured locally, so the factors visible in `sprio` do not have universal importance.",
   "Backfill can start lower-priority work when it does not delay planned higher-priority work.",
-  "Accurate time and resource requests improve placement options but never guarantee an immediate start.",
-  "Fair share compares entitled and consumed usage according to site policy; it is not a portable fixed score."
+  "Accurate requests help Slurm find nodes and time slots where a job can run, but do not guarantee an immediate start.",
+  "Fair share compares a user's or project's assigned share of resources with past usage. Each site decides how this affects priority."
 ]
 +++
 
 Two jobs submitted in order do not necessarily start in that order. Before a
-job can run, it must be eligible under account, QoS, reservation, dependency,
-and partition rules; it must be considered under scheduler policy; and a
-suitable combination of CPUs, memory, nodes, GPUs, licences, and time must be
-available.
+job can run, its account, QoS, reservation, and partition must permit it, and
+any jobs it depends on must have reached the required state. Slurm then uses
+job priorities and the resources available to choose which jobs can start.
 
 This episode explains common mechanisms. Your cluster's documentation and
 configuration remain the authority.
 
 ## Priority Is One Part of Scheduling
 
-Many clusters use Slurm's multifactor priority plugin. It can combine weighted
-factors including:
+Many clusters use Slurm's **multifactor priority plugin**, which calculates
+a job's priority by combining several factors. The site sets how much each
+factor contributes. They can include:
 
-- **age**: how long an eligible job has waited
-- **association**: a configured factor for the user/account association
-- **fair share**: entitled share compared with historical usage
+- **age**: how long a job has waited while meeting the conditions for scheduling
+- **association**: a priority adjustment for the user's membership of an account
+- **fair share**: assigned share of resources compared with past usage
 - **job size**: requested CPUs or nodes
 - **partition**: a factor attached to the partition
 - **QoS**: a factor attached to a quality of service
@@ -64,16 +64,19 @@ sprio -l
 sprio -j YOUR_JOB_ID
 ```
 
-`sprio` explains a priority value; it does not promise a start time. Partition
-tiers, reservations, preemption, eligibility, and resource fit can affect which
-job the scheduler evaluates or starts.
+`sprio` explains a priority value; it does not promise a start time. Slurm also
+considers partition priority levels, reservations, whether a job meets the
+scheduling rules, and whether its requested resources are available together.
+Some sites allow **preemption**: interrupting a running job to free resources
+for another job.
 
-## Fair Share Is Historical Context
+## Past Usage Can Affect Priority {#fair-share-is-historical-context}
 
 Fair-share policy balances usage over time among users, accounts, or projects.
 A project that has recently consumed more than its configured share may receive
 a lower fair-share contribution than one that has consumed less. The history
-can decay, and the hierarchy and weights are local choices.
+may count less as it gets older. Each site decides how shares are divided
+among projects and users, and how much fair share affects priority.
 
 Where enabled and visible, inspect share information with:
 
@@ -83,8 +86,8 @@ sshare -l
 
 Some sites restrict the output or present fair-share data through a portal.
 Treat it as an explanation of policy, not as a score to game. Splitting a job,
-changing its name, or repeatedly resubmitting does not create additional
-entitlement and can create extra load.
+changing its name, or repeatedly resubmitting does not increase your assigned
+share of resources and gives Slurm extra work to manage.
 
 ## QoS and Partitions Express Policy
 
@@ -113,7 +116,9 @@ a ten-minute job may not.
 Backfill scheduling looks for lower-priority work that can fit available gaps
 without delaying planned higher-priority jobs. The scheduler relies on the
 submitted time limit to decide whether a job fits. This is why a realistic
-`--time` can help a short job: it creates more safe placement possibilities.
+`--time` can help a short job: it can fit into more gaps in the schedule.
+The official [Scheduling Configuration Guide](https://slurm.schedmd.com/sched_config.html)
+explains how backfill uses job time limits and requested resources.
 
 It is not a guarantee. The requested CPU/memory/node combination, policy,
 reservation changes, new submissions, and the accuracy of scheduling estimates
@@ -133,23 +138,15 @@ and cluster state change.
 Seeing idle CPUs does not prove that a pending job can use them. Possible
 reasons include:
 
-- idle CPUs lack the requested memory, GPU, feature, or licence
+- the nodes with idle CPUs lack the requested memory, GPU, feature, or licence
 - the nodes belong to another partition or reservation
 - policy limits the user's or account's running work
 - the scheduler is preserving resources for a planned higher-priority start
-- the request cannot fit the available topology or contiguous node set
+- the job requests an arrangement of nodes or CPUs that is not available
 - node state changed after the summary was produced
 
 Begin with the job's displayed pending reason and full request. Avoid diagnosing
 from a cluster-wide utilisation percentage alone.
-
-{{< callout type="note" title="PSI Merlin case study" >}}
-The Merlin best-practices slides describe duration-tiered partitions,
-multifactor priority, fair share, and backfill. They illustrate the general
-principle that accurate requests improve packing and cluster utilisation. The
-specific partition tiers, priority weights, stakeholder rules, and off-hours
-behaviour are Merlin policy and must not be projected onto other clusters.
-{{< /callout >}}
 
 {{< challenge title="Which job might start first?" >}}
 Job A has higher numeric priority and requests eight nodes for four hours. Job B

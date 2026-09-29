@@ -1,6 +1,6 @@
 +++
 title = "Trackable Resource (TRES)"
-summary = "A resource type that Slurm can allocate, account for, or limit, such as CPU, memory, node, or GPU."
+summary = "A resource type that Slurm can assign to jobs, record usage for, or limit, such as CPU, memory, node, or GPU."
 weight = 130
 +++
 

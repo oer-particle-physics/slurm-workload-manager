@@ -15,16 +15,15 @@ objectives = [
   "Use `sacct`, job logs, state, and exit code to diagnose a completed job."
 ]
 keypoints = [
-  "Use `squeue` for pending and running work and `sacct` for the durable job record.",
+  "Use `squeue` for pending and running work and `sacct` to look up job records, including after a job finishes.",
   "A pending reason describes the condition currently preventing a start; it is not a promise of start order or time.",
-  "Diagnose from evidence: job ID, state, reason or exit code, requested resources, and both log streams.",
+  "To investigate a job, check its ID, state, reason or exit code, requested resources, and both output and error logs.",
   "Cancel work you no longer need with `scancel` and confirm the resulting state."
 ]
 +++
 
-Submission is only the beginning of a job's lifecycle. A reliable user follows
-the job far enough to know whether it ran, whether it produced the intended
-result, and what should change next time.
+After submitting a job, check whether it ran, whether it produced the intended
+result, and whether its time, CPU, or memory request needs to change next time.
 
 Two commands provide complementary views:
 
@@ -74,17 +73,17 @@ when it was considered?” Examples include:
 
 | Reason | Interpretation |
 |---|---|
-| `Priority` | Higher-priority eligible work is ahead under current policy |
+| `Priority` | Other jobs are ahead of this job under Slurm's priority rules |
 | `Resources` | The requested resource combination is not currently available |
 | `Dependency` | A prerequisite job or condition is not yet satisfied |
-| `JobArrayTaskLimit` | The array's concurrency limit is currently reached |
+| `JobArrayTaskLimit` | The array already has as many running jobs as its limit allows |
 | `PartitionTimeLimit` | The requested walltime exceeds the partition limit |
-| `InvalidAccount` or `InvalidQOS` | The submission's local accounting settings are invalid |
+| `InvalidAccount` or `InvalidQOS` | The requested account or QoS is not valid for this job |
 
 Only one reason may be displayed even when several conditions apply, and the
-reason can change between scheduling cycles. `Priority` and `Resources` do not
-mean that the cluster is broken. They also do not provide a guaranteed start
-time.
+reason can change when Slurm next checks the queue. `Priority` and `Resources`
+do not mean that the cluster is broken. They also do not provide a guaranteed
+start time.
 
 See the official [Job Reason Codes](https://slurm.schedmd.com/job_reason_codes.html)
 page when a reason is unfamiliar.
@@ -99,7 +98,7 @@ Look for `JobState`, `Reason`, `Partition`, `Account`, `QOS`, `TimeLimit`,
 `NumCPUs`, `ReqTRES`, `WorkDir`, `StdOut`, and `StdErr`. The exact fields vary
 with Slurm version and configuration.
 
-{{< callout type="note" title="Do not repeatedly poll in a tight loop" >}}
+{{< callout type="note" title="Allow time between status checks" >}}
 Commands such as `squeue`, `sacct`, and `scontrol` query shared Slurm services.
 Refresh manually while learning. Automated monitoring should use a sensible
 interval and site guidance rather than issuing requests several times per
@@ -135,7 +134,7 @@ Cancel it whether it is pending or running:
 scancel "$CANCEL_ID"
 ```
 
-It may disappear from `squeue` quickly. Confirm the durable state with:
+It may disappear from `squeue` quickly. Check its recorded state with:
 
 ```bash
 sacct -j "$CANCEL_ID" --format=JobID,JobName,State,ExitCode,Elapsed
@@ -146,7 +145,13 @@ You should see `CANCELLED`, although accounting updates can take a short time.
 ## Create and Diagnose a Real Failure
 
 Copy `first-job.sh` to `diagnose-job.sh`, change its job name to
-`particle-diagnose`, and deliberately misspell one application option:
+`particle-diagnose`:
+
+```bash
+#SBATCH --job-name=particle-diagnose
+```
+
+and deliberately misspell one application option:
 
 ```bash
 srun python3 particle_demo.py \
@@ -217,8 +222,8 @@ For a finished job:
 {{< callout type="note" title="`seff` is optional" >}}
 Some clusters install `seff`, a convenient summary script. It is not available
 everywhere and its efficiency values need site-specific interpretation.
-This course uses portable `sacct` fields as the baseline. If `seff "$JOB_ID"`
-works at your site, use it as an additional view rather than the only evidence.
+This course uses `sacct` directly. If `seff "$JOB_ID"` works at your site,
+use it alongside the job records and logs.
 {{< /callout >}}
 
 {{< challenge title="Repair and verify the workload" >}}
@@ -237,9 +242,12 @@ Use the new job ID in every command.
 {{< /solution >}}
 {{< /challenge >}}
 
+Continue with [Interactive Work on Compute Nodes]({{< relref "/episodes/04-interactive-jobs" >}})
+to check an environment and try commands within a short allocation.
+
 {{< instructor >}}
-The intentional command-line error is deterministic and does not depend on a
-site's memory enforcement. If accounting is delayed, give learners a prepared
+The misspelled option reliably causes an error without depending on how the
+site enforces memory limits. If accounting is delayed, give learners a prepared
 `sacct` example but still have them inspect their own error log and result
 file. Emphasise that “not in `squeue`” does not mean “successful”.
 {{< /instructor >}}

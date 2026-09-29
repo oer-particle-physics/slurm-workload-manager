@@ -1,6 +1,7 @@
 +++
 title = "Slurm Workload Manager"
 layout = "hextra-home"
+aliases = ["/profiles/", "/profiles/new-slurm-user/"]
 +++
 
 {{< hextra/hero-badge link="episodes/01-slurm-model/" >}}
@@ -9,17 +10,19 @@ Start with your local cluster {{< icon name="arrow-circle-right" attributes="hei
 
 <div class="hx:mt-6 hx:mb-6">
 {{< hextra/hero-headline >}}
-Run research workloads&nbsp;
-<br class="hx:xl:block hx:hidden" />
-confidently with Slurm
+Run batch jobs with Slurm
 {{< /hextra/hero-headline >}}
 </div>
 
 <div class="hx:mb-12">
 {{< hextra/hero-subtitle >}}
 Discover how your cluster is configured, submit and diagnose jobs, request the
-resources your application needs, and scale from one input to a job array.
+resources your workload needs, and scale from one input to a job array.
 {{< /hextra/hero-subtitle >}}
+<p class="hx:mt-6 hx:text-gray-600 hx:dark:text-gray-400">
+This course is for researchers comfortable with basic Linux commands and SSH.
+No previous Slurm experience is required.
+</p>
 </div>
 
 <div class="hx:mb-6">
@@ -32,7 +35,7 @@ resources your application needs, and scale from one input to a job array.
 {{< hextra/feature-grid cols="3" >}}
 {{< hextra/feature-card
   title="Discover Your Cluster"
-  subtitle="Read partitions and policies without copying another site's settings."
+  subtitle="Find the partitions, limits, and submission settings for your cluster."
   icon="book-open"
   link="episodes/01-slurm-model/"
 >}}
@@ -44,9 +47,9 @@ resources your application needs, and scale from one input to a job array.
 >}}
 {{< hextra/feature-card
   title="Scale with Arrays"
-  subtitle="Turn the same small workload into a throttled, recoverable campaign."
+  subtitle="Process many inputs, limit how many jobs run at once, and rerun failed jobs."
   icon="sparkles"
-  link="episodes/05-job-arrays/"
+  link="episodes/06-job-arrays/"
 >}}
 {{< /hextra/feature-grid >}}
 

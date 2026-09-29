@@ -8,12 +8,13 @@ type: dataset
 authors:
   - given-names: Clemens
     family-names: Lange
+    orcid: https://orcid.org/0000-0002-3632-3157
 abstract: >-
   A hands-on introduction to using the Slurm workload manager on a shared
   Linux cluster. The lesson covers cluster discovery, batch and interactive
   jobs, monitoring and diagnosis, resource requests and accounting, and job
-  arrays, with optional extensions on efficient campaigns, scheduler
-  mechanics, and parallel hardware.
+  arrays, with optional extensions on efficient campaigns and scheduler
+  mechanics.
 repository-code: https://github.com/oer-particle-physics/slurm-workload-manager
 url: https://oer-particle-physics.github.io/slurm-workload-manager/
 license: CC-BY-4.0

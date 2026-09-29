@@ -4,5 +4,6 @@ summary = "One process launched by Slurm as part of a job step."
 weight = 120
 +++
 
-`--ntasks` requests capacity for tasks. Threads created inside one process are
-not separate Slurm tasks and normally use `--cpus-per-task`.
+`--ntasks` specifies how many tasks Slurm should be able to launch. Threads
+created inside one process are not separate Slurm tasks; request CPUs for them
+with `--cpus-per-task`.

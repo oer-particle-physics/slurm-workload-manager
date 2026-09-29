@@ -180,6 +180,37 @@ An empty error file is normal. The JSON result should now contain the real job
 ID and the hostname of a compute node. Check that its job ID matches the
 submission you are inspecting, especially if you have run this sample before.
 
+For example, selected fields from a successful result might look like:
+
+```json
+{
+  "sample": "dyjets_chunk_001",
+  "hostname": "compute01",
+  "job_id": "12345",
+  "array_task_id": null,
+  "workers": 1,
+  "memory_mib": 64
+}
+```
+
+Your hostname and job ID will differ. `sample` identifies the requested input
+label, `workers` should match this one-worker job, and `array_task_id` is
+`null` because this is not an array. `memory_mib` is the program's requested
+allocation of memory; it is not a measurement of the whole job's peak usage.
+The additional timing and simulated-event fields can vary between runs.
+
+After comparing these fields yourself, run the checker downloaded in Setup:
+
+```bash
+python3 check_result.py results/dyjets_chunk_001.json \
+  --job-id "$JOB_ID" --sample dyjets_chunk_001 --workers 1
+```
+
+Expect `OK:` followed by the result path and your job details. The checker
+reports `FAIL:` and exits non-zero if the file is missing, invalid JSON, or
+has a mismatched sample, job ID, worker count, or array index. It checks result
+metadata; the accounting record and logs remain separate checks.
+
 {{< callout type="note" title="If files are still missing" >}}
 If the job failed, inspect any available error log and follow the diagnosis
 steps in the next episode. If the logs are missing too, run
@@ -201,33 +232,34 @@ This one submission demonstrates all three levels:
 
 For a simple serial job, many clusters also allow the script to run
 `python3 ...` directly. Here, `srun` starts the program as a job step within
-the resources already assigned to the job. Later examples use it to launch
-multiple tasks. Follow local guidance when an application or MPI installation
-needs a different launch command.
+the resources already assigned to the job. Its separate accounting record
+will help us examine the program's resource use in a later episode.
 
 ## Command-Line Options Override the Script
 
-You can change a submission without editing the reusable script:
-
-```bash
-sbatch "${SLURM_SITE_ARGS[@]}" \
-  --job-name=particle-repeat \
-  --time=00:03:00 \
-  first-job.sh
-```
-
 Options supplied to `sbatch` override matching `#SBATCH` directives. This is
 also how `site-settings.sh` supplies the local partition, account, QoS, or
-reservation.
+reservation. In the next exercise, use `--job-name=particle-two` and
+`--time=00:03:00` at submission time to override those two script settings.
 
 {{< challenge title="Submit a second sample" >}}
-Without changing the resource directives, edit the application arguments so a
-new submission processes `ttbar_chunk_001` and writes
-`results/ttbar_chunk_001.json`. Submit it, record its job ID, and verify that
-the old log and result still exist.
+Copy the first script to `second-job.sh`. Change the application arguments so
+it processes `ttbar_chunk_001` and writes `results/ttbar_chunk_001.json`.
+Leave the directives unchanged and override the job name and time limit on
+the submission command line as described above. Record the new ID, verify
+completion and the new result, and check that the first job's logs and result
+are still available.
 
 {{< solution >}}
-Change the final command to:
+First finish checking the initial job. Keep its ID and copy its script:
+
+```bash
+FIRST_ID=$JOB_ID
+cp first-job.sh second-job.sh
+```
+
+In `second-job.sh`, replace the final application command with the following.
+Keep the directives and any local Python setup from the copied script:
 
 ```bash
 srun python3 particle_demo.py \
@@ -237,9 +269,45 @@ srun python3 particle_demo.py \
   --output results/ttbar_chunk_001.json
 ```
 
-Submit with `sbatch "${SLURM_SITE_ARGS[@]}" first-job.sh`. The new log has a
-different `%j` value, so it does not replace the previous log. The result name
-is also distinct.
+Submit the copy, overriding its name and time limit:
+
+```bash
+source site-settings.sh
+submission=$(sbatch --parsable "${SLURM_SITE_ARGS[@]}" \
+  --job-name=particle-two --time=00:03:00 second-job.sh)
+SECOND_ID=${submission%%;*}
+echo "$SECOND_ID"
+squeue -j "$SECOND_ID"
+```
+
+`--parsable` returns the ID without the introductory sentence. Some
+multi-cluster installations append `;cluster`; `${submission%%;*}` keeps the
+numeric ID. If submission reports an error, resolve it before continuing.
+
+Wait for this job to leave the queue, then check accounting:
+
+```bash
+sacct -X -j "$SECOND_ID" --format=JobID,JobName%20,State,ExitCode,Timelimit
+```
+
+Expect `particle-two`, `COMPLETED`, `0:0`, and a three-minute time limit.
+`-X` omits the job-step rows. Allow time for accounting to update. Then inspect
+the logs and validate both results:
+
+```bash
+cat "logs/particle-two-${SECOND_ID}.out"
+cat "logs/particle-two-${SECOND_ID}.err"
+python3 check_result.py results/ttbar_chunk_001.json \
+  --job-id "$SECOND_ID" --sample ttbar_chunk_001 --workers 1
+ls -l "logs/particle-one-${FIRST_ID}.out" "logs/particle-one-${FIRST_ID}.err"
+python3 check_result.py results/dyjets_chunk_001.json \
+  --job-id "$FIRST_ID" --sample dyjets_chunk_001 --workers 1
+```
+
+The new error log should be empty, both checks should print `OK:`, and the
+original logs should still exist. Separate result names preserve the first
+result; `%x` and `%j` distinguish the logs. Keep `first-job.sh` unchanged for
+later episodes.
 {{< /solution >}}
 {{< /challenge >}}
 

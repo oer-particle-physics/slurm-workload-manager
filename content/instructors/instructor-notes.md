@@ -14,7 +14,7 @@ episode 2 uses those settings for the first submission.
 Teach how Slurm manages jobs across different clusters, and give learners
 repeated practice finding their site's rules and interpreting job output.
 
-The six core episodes total approximately 2 hours 45 minutes:
+The six core episodes total approximately 2 hours 50 minutes:
 
 | Episode | Teaching | Exercises |
 |---|---:|---:|
@@ -22,12 +22,12 @@ The six core episodes total approximately 2 hours 45 minutes:
 | First Batch Job | 15 min | 10 min |
 | Monitoring, Control, and Diagnosis | 15 min | 10 min |
 | Interactive Work on Compute Nodes | 10 min | 10 min |
-| Resource Requests and Efficient Use | 20 min | 10 min |
+| Resource Requests and Efficient Use | 20 min | 15 min |
 | Scaling with Job Arrays | 15 min | 15 min |
 
 Waiting for jobs to start, resolving account problems, and taking breaks can
 extend a live session. Where interactive access is unavailable, skip that episode;
-the other five episodes total approximately 2 hours 25 minutes.
+the other five episodes total approximately 2 hours 30 minutes.
 
 The two extension episodes are better suited to a half-day workshop or
 self-study.
@@ -70,13 +70,23 @@ Learners use the same `particle_demo.py` workload throughout:
 1. Setup runs a tiny login-node check.
 1. Cluster discovery produces a settings file and site note for later jobs.
 1. The first script runs one labelled sample under Slurm.
-1. A misspelled option makes the program fail; learners find the error and fix it.
+1. A held submission lets learners inspect and cancel a pending job without
+   a race against its runtime. A misspelled option then produces a failure;
+   learners diagnose it and verify a corrected copy.
 1. An interactive session checks the compute-node environment, runs a small
    test, and ends with verified release of the allocation.
 1. A four-worker job connects `--cpus-per-task` to the number of application
    workers; a one-worker comparison shows what happens when CPUs go unused.
+   Learners submit that one-worker program with a smaller CPU request and
+   verify the new allocation and result.
 1. The input list becomes an array with at most two jobs running at once,
-   separate logs for each element, and reruns of only unsuccessful elements.
+  separate logs for each element, and reruns of only unsuccessful elements.
+
+The single-result checker introduced with the first batch job checks metadata
+against explicit expectations. In the array episode, first demonstrate the
+manual match between `JobIDRaw` and the JSON job ID, then use `check_array.py`
+for the full audit. These helpers support the accounting and log checks;
+they do not establish scientific correctness.
 
 The program intentionally does no real physics. It allocates a controlled
 amount of memory, repeats a CPU calculation for approximately the requested
@@ -100,6 +110,8 @@ This keeps the focus on Slurm without requiring external data or packages.
 - At the end of episode 1, check that every learner can load their settings
   and has recorded the remaining local details before continuing.
 - Ask for job IDs whenever learners discuss evidence; job names are not unique.
+- In monitoring, ensure learners cancel their held `MONITOR_ID` before
+  proceeding to the failure exercise or leaving the session.
 - If jobs finish too quickly for `squeue`, move directly to `sacct` and explain
   that completed jobs are found in the accounting records.
 - If jobs remain pending, use prepared accounting output for the teaching point
@@ -107,7 +119,8 @@ This keeps the focus on Slurm without requiring external data or packages.
 - In the interactive episode, check hostnames at each shell transition and
   confirm that learners have released their allocations before continuing.
 - Debrief resource exercises using patterns and uncertainty, not an expected
-  exact efficiency percentage.
+  exact efficiency percentage. Use the worked step-accounting table when
+  measurements are missing, and complete the one-CPU resubmission check.
 - In the array episode, treat `JobArrayTaskLimit` as evidence that `%2` works.
 - In the recovery exercise, check the held array before and after cancelling
   index 7, then release the remaining elements. Do not require a separate
@@ -174,7 +187,8 @@ This keeps the focus on Slurm without requiring external data or packages.
   the bundle, and verifies both jobs and the summary report. The complete
   scripts and result-checking helper are downloadable from the episode.
   Ensure learners use the bundle's job-specific result directory and release
-  or cancel held jobs before leaving the exercise.
+  or cancel held jobs before leaving the exercise. The notifications and
+  checkpointing note is further context, not another task to implement.
   Distinguish finishing one input sooner from processing more inputs per hour.
   The array and bundle examples use different concurrency limits and work
   durations; their runtimes do not measure the performance benefit of bundling.

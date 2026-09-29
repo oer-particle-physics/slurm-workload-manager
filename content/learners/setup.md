@@ -58,12 +58,13 @@ from the login node.
 
 ## Download the Starter Files
 
-Download the dependency-free workload and its input list:
+Download the workload, its input list, and the result checker:
 
 ```bash
 base_url="https://oer-particle-physics.github.io/slurm-workload-manager/files/slurm-course"
 curl -fLO "$base_url/particle_demo.py"
 curl -fLO "$base_url/inputs.txt"
+curl -fLO "$base_url/check_result.py"
 chmod u+x particle_demo.py
 ```
 
@@ -81,9 +82,23 @@ You can also download the files individually:
 
 - [particle_demo.py](/files/slurm-course/particle_demo.py)
 - [inputs.txt](/files/slurm-course/inputs.txt)
+- [check_result.py](/files/slurm-course/check_result.py)
 - [site-settings.sh](/files/slurm-course/site-settings.sh)
 
 ## Check the Workload
+
+`particle_demo.py` performs a small synthetic CPU calculation and allocates a
+chosen amount of memory. Sample names such as `dyjets_chunk_001` are labels;
+there are no physics data files to obtain. The program writes JSON containing
+the sample label, job ID, hostname, worker count, and measurements. Its
+`selected_events` value is simulated, not a physics result.
+
+The `--seconds` argument sets an approximate work duration per worker. Adding
+workers changes how much calculation happens during that time, so this program
+is useful for learning job handling rather than timing a fixed analysis.
+The supplied `check_result.py` checks result metadata against the job and
+workload you intended to run; the first episode that submits jobs explains
+the fields to compare.
 
 Run the workload once on the login node with deliberately tiny settings. This
 is only a setup check, not a benchmark:
@@ -107,7 +122,7 @@ batch exercise will check it on a compute node.
 Before continuing, confirm that:
 
 - You can use the cluster's Slurm commands and Python 3.9 or newer.
-- Your shared course directory contains the three starter files and the
+- Your shared course directory contains the four starter files and the
   `logs/` and `results/` directories.
 - The tiny workload check produced `results/setup-check.json`.
 

@@ -89,6 +89,9 @@ srun python3 particle_demo.py \
   --output "results/${sample}.json"
 ```
 
+Add any Python module or environment commands from your site note before
+`srun`, keeping all `#SBATCH` directives at the top, as in the first batch job.
+
 The array directive has two parts:
 
 - `0-7` creates eight indices matching the eight input lines.
@@ -163,19 +166,56 @@ sacct --array -j "$ARRAY_ID" \
   --format=JobID%24,JobIDRaw,JobName%24,State,ExitCode,Elapsed,AllocCPUS,MaxRSS
 ```
 
-Then check results and error logs:
+Expect eight top-level element records, each `COMPLETED` with `0:0`. Allow
+time for accounting updates before interpreting missing records. Then match
+one result to its accounting record. Start with index 0:
 
 ```bash
-ls -1 results/*.json
-find logs -name "particle-array-${ARRAY_ID}_*.err" -size +0 -print
+sacct --array -X -j "${ARRAY_ID}_0" --format=JobID%24,JobIDRaw,State,ExitCode
+mapfile -t samples < inputs.txt
+python3 -m json.tool "results/${samples[0]}.json"
+cat "logs/particle-array-${ARRAY_ID}_0.out"
+cat "logs/particle-array-${ARRAY_ID}_0.err"
 ```
 
-The `find` command prints non-empty error logs. No output is a good sign, but
-still confirm states and result files.
+For example, if the accounting row is `24680_0` with `JobIDRaw=24681`, the
+JSON must contain `job_id: "24681"`, `array_task_id: "0"`, and the first label
+from `inputs.txt`. The result's job ID is the element's numeric ID, which can
+differ from the array's master ID. The output log should name the same sample
+and index; the error log should be empty.
 
-The JSON result's `job_id` is the element's numeric Slurm job ID: compare it
-with `JobIDRaw` in the accounting output. Also check `array_task_id` against
-the intended index. The numeric job ID can differ from the array's master ID.
+Capture that numeric ID and check the same fields automatically:
+
+```bash
+ELEMENT_JOB_ID=$(sacct --array -X --noheader --parsable2 \
+  -j "${ARRAY_ID}_0" --format=JobIDRaw)
+python3 check_result.py "results/${samples[0]}.json" \
+  --job-id "$ELEMENT_JOB_ID" --sample "${samples[0]}" \
+  --workers 1 --array-task-id 0
+```
+
+Expect `OK:`. This establishes the matching rule; now apply it to all eight
+inputs with [check_array.py](/files/slurm-course/check_array.py), a standalone
+checker using only Python's standard library:
+
+```bash
+base_url="https://oer-particle-physics.github.io/slurm-workload-manager/files/slurm-course"
+curl -fLO "$base_url/check_array.py"
+sacct --array -X --noheader --parsable2 -j "$ARRAY_ID" \
+  --format=JobID%32,JobIDRaw%32,State%32,ExitCode > array-accounting.txt
+python3 check_array.py "$ARRAY_ID" --accounting array-accounting.txt
+```
+
+`--parsable2` separates fields with `|` and `--noheader` omits column titles.
+The checker reads this export and `inputs.txt`. For each index, it requires a
+successful accounting record, matching sample/job/index/worker fields in the
+JSON, both log files, and an empty error log. Expect eight `OK:` lines and
+`Checked all 8 inputs: successful jobs, matching results, and empty error logs.`
+
+On `FAIL:`, inspect the named record, result, or log. A non-empty error log
+requires reading; a message can be harmless, but the checker cannot decide
+that for you. For missing accounting, wait and regenerate the export. Use the
+next exercise to learn how to recover an input that has no successful result.
 
 {{< callout type="note" title="An existing result may belong to an earlier run" >}}
 This script names results by sample label. Running the same sample again
@@ -271,7 +311,9 @@ Once it reports `COMPLETED` with `0:0`, read the result for index 7:
 
 ```bash
 mapfile -t samples < inputs.txt
-cat "results/${samples[7]}.json"
+python3 -m json.tool "results/${samples[7]}.json"
+cat "logs/particle-array-${RECOVERY_ID}_7.out"
+cat "logs/particle-array-${RECOVERY_ID}_7.err"
 ```
 
 Confirm that `array_task_id` is `7` and `job_id` matches the rerun's `JobIDRaw`.
@@ -284,15 +326,8 @@ validation together with any cancellations you recorded.
 
 ## Why Not a Submission Loop?
 
-Avoid this pattern for a large campaign:
-
-```bash
-while read -r sample; do
-  sbatch "${SLURM_SITE_ARGS[@]}" job-for-one-sample.sh "$sample"
-done < inputs.txt
-```
-
-Every `sbatch` is a separate request to Slurm. With an array, the jobs share
+Calling `sbatch` once for every input in a shell loop sends a separate request
+to Slurm for each job. With an array, the jobs share
 one array ID, and `%M` limits how many run at once. You can inspect or cancel
 the whole array or select individual elements.
 
@@ -350,15 +385,52 @@ For the eight intended inputs, produce evidence that:
 - no more than two elements were intended to run at once
 
 {{< solution >}}
-If you completed the recovery exercise, use `RECOVERY_ARRAY_ID` for elements
-0–6 and `RECOVERY_ID` for element 7. Check their accounting states and exit
-codes, compare each JSON file's `job_id` with the corresponding `JobIDRaw`,
-and inspect the matching error logs. Your cancellation notes and queue checks
-explain why index 7 did not run in the recovery array.
+First show the intended inputs and the script's concurrency limit:
 
-If you skipped recovery, use the initial `ARRAY_ID` instead. In either case,
-show the eight inputs and the submitted `0-7%2` specification. Do not combine
-one attempt's accounting records with another attempt's result files.
+```bash
+nl -ba inputs.txt
+grep '^#SBATCH --array=' array-job.sh
+```
+
+Expect eight labels and `#SBATCH --array=0-7%2`. Together with the submission
+commands recorded earlier, this shows the intended two-element limit. It
+does not retrospectively measure how many actually ran at every instant.
+
+If you completed recovery, wait for all its jobs to finish. Use the practice
+array for indices 0–6 and the single-element rerun for index 7:
+
+```bash
+sacct --array -X --noheader --parsable2 \
+  -j "$RECOVERY_ARRAY_ID,$RECOVERY_ID" \
+  --format=JobID%32,JobIDRaw%32,State%32,ExitCode > recovery-accounting.txt
+python3 check_array.py "$RECOVERY_ARRAY_ID" \
+  --recovery-id "$RECOVERY_ID" --recovery-index 7 \
+  --accounting recovery-accounting.txt
+```
+
+The checker downloaded earlier should print eight `OK:` lines, identifying the
+practice array for indices 0–6 and the rerun for index 7, followed by its
+successful eight-input summary. This checks current result files against the
+specific successful attempts and reads the sizes of their matching error logs.
+
+Also retain the recorded cancellation of `${RECOVERY_ARRAY_ID}_7` and the
+before/after queue checks. Those explain the cancelled attempt even if no
+accounting row exists. The checker verifies successful results; it cannot
+reconstruct a missing cancellation record.
+
+If you skipped recovery, use this alternative instead:
+
+```bash
+sacct --array -X --noheader --parsable2 -j "$ARRAY_ID" \
+  --format=JobID%32,JobIDRaw%32,State%32,ExitCode > array-accounting.txt
+python3 check_array.py "$ARRAY_ID" --accounting array-accounting.txt
+```
+
+Run only the branch that matches the files currently in `results/`. A later
+array submission replaces results with the same sample names; using an older
+array ID should then fail the identity check. For a reported problem, inspect
+the named log or result, resolve it, and refresh the accounting export before
+checking again.
 {{< /solution >}}
 {{< /challenge >}}
 

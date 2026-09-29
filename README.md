@@ -24,14 +24,14 @@ not need Go or network access.
 
 ## Course structure
 
-- six core episodes that build on each other (about 2 hours 45 minutes)
+- six core episodes that build on each other (about 2 hours 50 minutes)
 - two optional extensions on efficient campaigns and scheduler mechanics
 - learner setup and downloadable starter files
 - instructor notes with pacing and cluster-adaptation guidance
 - generated all-in-one, key-points, glossary, and external-link pages
 
 The interactive episode can be skipped where the cluster does not support
-interactive access. The remaining core episodes take about 2 hours 25 minutes.
+interactive access. The remaining core episodes take about 2 hours 30 minutes.
 
 ## Writing examples
 

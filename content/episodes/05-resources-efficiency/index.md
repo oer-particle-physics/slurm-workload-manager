@@ -3,7 +3,7 @@ title = "Resource Requests and Efficient Use"
 weight = 50
 aliases = ["/episodes/04-resources-efficiency/"]
 teaching = 20
-exercises = 10
+exercises = 15
 questions = [
   "How do time, memory, tasks, and CPUs per task describe my workload?",
   "How can accounting data improve the next request?",
@@ -113,7 +113,13 @@ point; check your site's instructions for how to use them on your cluster.
 
 ## Run the Course Workload with Four Workers
 
-Copy `first-job.sh` to `parallel-job.sh`. Change these lines:
+Copy the first script:
+
+```bash
+cp first-job.sh parallel-job.sh
+```
+
+In `parallel-job.sh`, set these directives:
 
 ```bash
 #SBATCH --job-name=particle-parallel
@@ -128,7 +134,7 @@ srun python3 particle_demo.py \
   --sample parallel-check \
   --seconds 8 \
   --memory-mib 64 \
-  --output results/parallel-check.json
+  --output "results/parallel-${SLURM_JOB_ID}.json"
 ```
 
 There is deliberately no `--workers` argument. The program reads
@@ -141,19 +147,31 @@ source site-settings.sh
 submission=$(sbatch --parsable "${SLURM_SITE_ARGS[@]}" parallel-job.sh)
 PARALLEL_ID=${submission%%;*}
 echo "$PARALLEL_ID"
+squeue -j "$PARALLEL_ID"
 ```
 
-After completion, inspect the log and result:
+Wait while the job is pending, running, or completing. Once it leaves the
+queue, confirm its final state:
+
+```bash
+sacct -X -j "$PARALLEL_ID" --format=JobID,State,ExitCode,AllocCPUS
+```
+
+Expect `COMPLETED`, `0:0`, and four allocated CPUs. If accounting has not
+updated yet, wait and check again. Then inspect both logs and the result:
 
 ```bash
 cat "logs/particle-parallel-$PARALLEL_ID.out"
-cat results/parallel-check.json
+cat "logs/particle-parallel-$PARALLEL_ID.err"
+python3 -m json.tool "results/parallel-${PARALLEL_ID}.json"
+python3 check_result.py "results/parallel-${PARALLEL_ID}.json" \
+  --job-id "$PARALLEL_ID" --sample parallel-check --workers 4
 ```
 
-Both should report four workers. This verifies the resource count reached the
-application; it does not by itself prove that four workers are faster for a
-real scientific program. Benchmark representative inputs before choosing a
-combination of tasks and CPUs.
+The output log and result should report four workers, the error log should
+be empty, and the checker should print `OK:`. This verifies that the resource
+count reached the intended application run. Later in this episode, you will
+compare the allocated CPUs with the CPU time actually used.
 
 ## Read the Accounting Evidence
 
@@ -161,7 +179,7 @@ Show both the resources assigned to the job and the amounts it used:
 
 ```bash
 sacct -j "$PARALLEL_ID" \
-  --format=JobID,JobName%20,State,Elapsed,Timelimit,AllocCPUS,TotalCPU,ReqMem,MaxRSS
+  --format=JobID%24,State,ExitCode,Elapsed,Timelimit,AllocCPUS,TotalCPU,ReqMem,MaxRSS
 ```
 
 Interpret them as follows:
@@ -193,6 +211,12 @@ A useful CPU-efficiency idea is:
 TotalCPU / (Elapsed × AllocCPUS)
 ```
 
+Use seconds for both time values and take them from the same accounting row.
+For this script, the `.0` row is the Python `srun` step; use it to compare
+application runs. The top-level job row describes the whole job, including
+startup and cleanup. Do not add its CPU time to the step rows: they can describe
+the same work. Read the job's requested memory from its top-level `ReqMem`.
+
 Do not expect an exact 100%. CPUs can wait while the program starts, reads or
 writes files, or finishes work that only one worker can do. Workers may also
 finish at different times. Measurement precision and the way Slurm counts CPUs
@@ -211,8 +235,15 @@ request. Use several runs before drawing conclusions from the numbers.
 
 ## Demonstrate an Over-Request
 
-Make a second copy called `over-requested-job.sh`. Keep
-`--cpus-per-task=4`, but force the application to use one worker:
+Copy the four-CPU script, keeping its Python environment setup:
+
+```bash
+cp parallel-job.sh over-requested-job.sh
+```
+
+Change the job-name directive to `#SBATCH --job-name=particle-over-requested`.
+Keep `--cpus-per-task=4` and the other resource directives, but replace the
+application command to use one worker and a separate result path:
 
 ```bash
 srun python3 particle_demo.py \
@@ -220,12 +251,105 @@ srun python3 particle_demo.py \
   --workers 1 \
   --seconds 8 \
   --memory-mib 64 \
-  --output results/over-requested.json
+  --output "results/over-requested-${SLURM_JOB_ID}.json"
 ```
 
-Submit it and compare `AllocCPUS`, `Elapsed`, and `TotalCPU` with the four-worker
-job. The one-worker application cannot use the other three allocated CPUs. A
-large set of such jobs would tie up CPUs that the programs do not use.
+Submit after the four-worker job has finished:
+
+```bash
+source site-settings.sh
+submission=$(sbatch --parsable "${SLURM_SITE_ARGS[@]}" over-requested-job.sh)
+OVER_ID=${submission%%;*}
+echo "$OVER_ID"
+squeue -j "$OVER_ID"
+```
+
+When it leaves the queue, check for `COMPLETED` and `0:0` before reading its
+logs and result:
+
+```bash
+sacct -X -j "$OVER_ID" --format=JobID,State,ExitCode,AllocCPUS
+cat "logs/particle-over-requested-${OVER_ID}.out"
+cat "logs/particle-over-requested-${OVER_ID}.err"
+python3 check_result.py "results/over-requested-${OVER_ID}.json" \
+  --job-id "$OVER_ID" --sample over-requested --workers 1
+```
+
+Expect four allocated CPUs but one application worker, an empty error log,
+and an `OK:` result check. Now compare the accounting records:
+
+```bash
+sacct -j "$PARALLEL_ID,$OVER_ID" --units=M \
+  --format=JobID%24,State,ExitCode,Elapsed,AllocCPUS,TotalCPU,MaxRSS
+```
+
+Here are the two application-step records from a test on PSI Tier-3.
+Your IDs and measurements will differ:
+
+```text
+JobID       State      ExitCode  Elapsed   AllocCPUS  TotalCPU   MaxRSS
+571954.0    COMPLETED  0:0       00:00:08  4          00:32.103  72.65M
+571956.0    COMPLETED  0:0       00:00:08  4          00:08.075  72.22M
+```
+
+`00:32.103` is 32.103 seconds. For the four-worker step,
+`32.103 / (8 × 4)` is approximately 100% CPU efficiency. For the one-worker
+step, `8.075 / (8 × 4)` is about 25%. Both held four CPUs for roughly eight
+seconds, but the second program used only about one CPU's worth of work at
+a time. The first ratio is slightly above 100% because these short records
+report elapsed time in whole seconds and CPU time with finer precision.
+Compare the same fields in your records; if measurements are missing,
+practise the calculation with this example.
+
+This comparison identifies unused CPUs. Because the program runs for a
+chosen duration per worker, similar elapsed times do not show that the two
+runs processed the same amount of work.
+
+{{< challenge title="Reduce the unused CPU request" >}}
+The over-requested program must keep using one worker. Choose a smaller CPU
+request, submit it without editing the script, and verify both the new
+allocation and the result. Keep its time and memory limits unchanged so that
+you are testing one change at a time.
+
+{{< solution >}}
+Request one CPU and give this attempt a distinct name. Command-line options
+override the script's four-CPU directive:
+
+```bash
+source site-settings.sh
+submission=$(sbatch --parsable "${SLURM_SITE_ARGS[@]}" \
+  --cpus-per-task=1 --job-name=particle-tuned over-requested-job.sh)
+TUNED_ID=${submission%%;*}
+echo "$TUNED_ID"
+squeue -j "$TUNED_ID"
+```
+
+Wait for the job to finish, then compare it with the original over-request:
+
+```bash
+sacct -X -j "$OVER_ID,$TUNED_ID" --format=JobID,JobName%24,State,ExitCode,AllocCPUS
+```
+
+Both should be `COMPLETED` with `0:0`. The original has four CPUs and the
+tuned job has one. Its result path still begins with `over-requested-`, as
+specified in the unchanged script, but contains the new job ID:
+
+```bash
+cat "logs/particle-tuned-${TUNED_ID}.out"
+cat "logs/particle-tuned-${TUNED_ID}.err"
+python3 check_result.py "results/over-requested-${TUNED_ID}.json" \
+  --job-id "$TUNED_ID" --sample over-requested --workers 1
+sacct -j "$OVER_ID,$TUNED_ID" --units=M \
+  --format=JobID%24,Elapsed,AllocCPUS,TotalCPU,MaxRSS
+```
+
+Expect an empty error log and `OK:` from the checker. In the application-step
+rows, elapsed time and total CPU time should be broadly similar between
+attempts, while the tuned job reserves fewer CPUs. This is the improvement
+being tested; a shorter elapsed time is not required. Retain memory headroom
+and use representative inputs before tuning a real analysis further.
+{{< /solution >}}
+{{< /challenge >}}
 
 ## Storage: Check Where Your Files Belong {#storage-learn-the-site-before-staging-data}
 
@@ -236,28 +360,17 @@ and output files. A cluster commonly offers some combination of:
 - node-local temporary storage, visible only within one compute node
 - object, tape, or experiment-specific storage accessed through other tools
 
-Follow these steps using the paths recommended by your site:
+The course jobs use the shared directory you chose in Setup. Check your site
+documentation and add three answers to `site-notes.md`: where lasting results
+belong, whether that location has a quota, and whether it has an automatic
+deletion policy. Confirm that your course directory is suitable for keeping
+the scripts, logs, and results you want after the course.
 
-1. Keep the script and results you need after the job ends on approved shared
-   or project storage.
-1. Use node-local storage for temporary files that the program reads or writes
-   frequently only when local documentation recommends it.
-1. Create a job-specific temporary directory and set `TMPDIR` if the site asks
-   you to.
-1. Check the results and copy them to shared storage before deleting temporary
-   files.
-1. Clean temporary files even when the script exits unexpectedly.
-
-A site that defines a suitable `$TMPDIR` may recommend a pattern like:
-
-```bash
-job_tmp=$(mktemp -d "${TMPDIR%/}/slurm-${SLURM_JOB_ID}.XXXXXX")
-trap 'rm -rf "$job_tmp"' EXIT
-```
-
-Do not use this merely because it appears here. First confirm that `$TMPDIR`
-is defined for jobs, has enough space, is node-local if that is what you need,
-and permits this cleanup pattern.
+For a real analysis with heavy file access, the site may recommend copying
+inputs to node-local storage first. That workflow also needs a checked copy
+of the results back to lasting storage before temporary files are removed.
+Use a complete example from your site when you need this; the course workload
+does not require temporary staging.
 
 {{< callout type="note" title="PSI storage example" >}}
 The [PSI Tier-3 storage guide](https://tier3.pages.psi.ch/storage/Tier3Storage/)

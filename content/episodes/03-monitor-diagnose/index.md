@@ -34,11 +34,24 @@ Two commands provide complementary views:
 
 ## Read Your Queue
 
-Submit `first-job.sh` again if you have no active job, then run:
+Work in your shared course directory with the first script and site settings
+from the previous episodes. Submit that script **on hold** for this exercise:
+Slurm will keep it pending until it is released or cancelled. This gives you
+time to inspect it even when the demonstration workload would finish quickly.
 
 ```bash
+source site-settings.sh
+submission=$(sbatch --parsable --hold "${SLURM_SITE_ARGS[@]}" \
+  --job-name=particle-monitor first-job.sh)
+MONITOR_ID=${submission%%;*}
+echo "$MONITOR_ID"
 squeue --me
 ```
+
+`--parsable` returns the job ID; `${submission%%;*}` removes a possible
+`;cluster` suffix. Continue only after submission succeeds and an ID is
+printed. Keep this job held: you will cancel it below, so it will not run or
+replace an earlier result.
 
 For a more informative, repeatable layout:
 
@@ -46,10 +59,13 @@ For a more informative, repeatable layout:
 squeue --me -o "%.18i %.12P %.24j %.2t %.10M %.6D %R"
 ```
 
-The final two fields are especially useful:
+Two fields are especially useful:
 
 - `%t` is the compact job state, such as `PD` (pending) or `R` (running).
 - `%R` is the pending reason, or the node list after the job starts.
+
+Your `MONITOR_ID` should have state `PD` and reason `JobHeldUser`. Compare its
+ID with the number you captured rather than relying on its name.
 
 Common states include:
 
@@ -76,6 +92,7 @@ when it was considered?” Examples include:
 | `Priority` | Other jobs are ahead of this job under Slurm's priority rules |
 | `Resources` | The requested resource combination is not currently available |
 | `Dependency` | A prerequisite job or condition is not yet satisfied |
+| `JobHeldUser` | The user has held the job; it needs release or cancellation |
 | `JobArrayTaskLimit` | The array already has as many running jobs as its limit allows |
 | `PartitionTimeLimit` | The requested walltime exceeds the partition limit |
 | `InvalidAccount` or `InvalidQOS` | The requested account or QoS is not valid for this job |
@@ -91,7 +108,7 @@ page when a reason is unfamiliar.
 Inspect one job in detail:
 
 ```bash
-scontrol show job "$JOB_ID"
+scontrol show job "$MONITOR_ID"
 ```
 
 Look for `JobState`, `Reason`, `Partition`, `Account`, `QOS`, `TimeLimit`,
@@ -107,58 +124,49 @@ second.
 
 ## Cancel Work Deliberately
 
-Create a harmless two-minute sleep job directly with `--wrap`:
+Cancel the held job you just inspected. `scancel` can cancel pending or
+running jobs; here no application work has started:
 
 ```bash
-source site-settings.sh
-submission=$(sbatch --parsable "${SLURM_SITE_ARGS[@]}" \
-  --job-name=cancel-me \
-  --time=00:03:00 \
-  --ntasks=1 \
-  --cpus-per-task=1 \
-  --mem=64M \
-  --output=logs/%x-%j.out \
-  --error=logs/%x-%j.err \
-  --wrap='srun sleep 120')
-CANCEL_ID=${submission%%;*}
-echo "$CANCEL_ID"
-```
-
-`--parsable` makes `sbatch` return an easy-to-capture identifier. On a
-multi-cluster setup the response can include `;cluster`, so the parameter
-expansion keeps the numeric job ID.
-
-Cancel it whether it is pending or running:
-
-```bash
-scancel "$CANCEL_ID"
+scancel "$MONITOR_ID"
+squeue -j "$MONITOR_ID"
 ```
 
 It may disappear from `squeue` quickly. Check its recorded state with:
 
 ```bash
-sacct -j "$CANCEL_ID" --format=JobID,JobName,State,ExitCode,Elapsed
+sacct -X -j "$MONITOR_ID" --format=JobID,JobName%20,State%20,ExitCode,Elapsed
 ```
 
 You should see `CANCELLED`, although accounting updates can take a short time.
+There should be no active queue row; an invalid-job-ID response can also mean
+Slurm has removed the finished job. No application logs or result are expected
+from this held attempt. If you stop the episode before this point, cancel the
+held job before leaving.
 
 ## Create and Diagnose a Real Failure
 
-Copy `first-job.sh` to `diagnose-job.sh`, change its job name to
-`particle-diagnose`:
+Copy the first script:
+
+```bash
+cp first-job.sh diagnose-job.sh
+```
+
+In `diagnose-job.sh`, change the job-name directive:
 
 ```bash
 #SBATCH --job-name=particle-diagnose
 ```
 
-and deliberately misspell one application option:
+Replace the application command with the following, which deliberately
+misspells one option:
 
 ```bash
 srun python3 particle_demo.py \
   --sample diagnosis \
   --seconds 4 \
   --memory-mb 64 \
-  --output results/diagnosis.json
+  --output "results/diagnosis-${SLURM_JOB_ID}.json"
 ```
 
 Submit it and capture the ID:
@@ -168,6 +176,7 @@ source site-settings.sh
 submission=$(sbatch --parsable "${SLURM_SITE_ARGS[@]}" diagnose-job.sh)
 DIAGNOSE_ID=${submission%%;*}
 echo "$DIAGNOSE_ID"
+squeue -j "$DIAGNOSE_ID"
 ```
 
 After it leaves `squeue`, request a focused accounting view:
@@ -199,9 +208,8 @@ now forms a complete explanation:
 - standard error identifies the invalid option
 - the missing result file is a consequence, not the root cause
 
-Correct the option to `--memory-mib`, submit again, and keep the new job ID.
-Never diagnose a new submission using an old log merely because the job names
-match.
+The repair exercise below will create a corrected copy and track it with a
+new job ID. Keep the failed attempt's ID and logs for comparison.
 
 ## A Repeatable Diagnostic Order
 
@@ -222,23 +230,65 @@ For a finished job:
 {{< callout type="note" title="`seff` is optional" >}}
 Some clusters install `seff`, a convenient summary script. It is not available
 everywhere and its efficiency values need site-specific interpretation.
-This course uses `sacct` directly. If `seff "$JOB_ID"` works at your site,
+This course uses `sacct` directly. If `seff "$DIAGNOSE_ID"` works at your site,
 use it alongside the job records and logs.
 {{< /callout >}}
 
 {{< challenge title="Repair and verify the workload" >}}
-Fix `diagnose-job.sh`, submit it again, and demonstrate success using three
-independent pieces of evidence.
+Copy `diagnose-job.sh` to `repaired-job.sh`, fix the misspelled option, and
+change the job name to `particle-repaired`. Submit the copy once and
+demonstrate success using accounting, logs, and a result belonging to this
+new attempt.
 
 {{< solution >}}
-A strong answer includes:
+Copy the script:
 
-1. `sacct` reports `COMPLETED` and `ExitCode` `0:0` for the repaired job.
-1. The standard-error log is empty (or contains no application error).
-1. `results/diagnosis.json` exists, parses as JSON, and contains the repaired
-   job's ID.
+```bash
+cp diagnose-job.sh repaired-job.sh
+```
 
-Use the new job ID in every command.
+In the copy, set `#SBATCH --job-name=particle-repaired` and replace the
+application command with:
+
+```bash
+srun python3 particle_demo.py \
+  --sample diagnosis \
+  --seconds 4 \
+  --memory-mib 64 \
+  --output "results/diagnosis-${SLURM_JOB_ID}.json"
+```
+
+Keep the other directives and any Python environment setup from the copied
+script. Submit and record the new ID:
+
+```bash
+source site-settings.sh
+submission=$(sbatch --parsable "${SLURM_SITE_ARGS[@]}" repaired-job.sh)
+REPAIR_ID=${submission%%;*}
+echo "$REPAIR_ID"
+squeue -j "$REPAIR_ID"
+```
+
+Wait for it to leave the queue, then compare the two attempts:
+
+```bash
+sacct -X -j "$DIAGNOSE_ID,$REPAIR_ID" --format=JobID,JobName%20,State,ExitCode
+```
+
+The original should be `FAILED` with a non-zero exit status; the repaired job
+should be `COMPLETED` with `0:0`. Allow time for accounting updates. Inspect
+the new logs and check its result:
+
+```bash
+cat "logs/particle-repaired-${REPAIR_ID}.out"
+cat "logs/particle-repaired-${REPAIR_ID}.err"
+python3 -m json.tool "results/diagnosis-${REPAIR_ID}.json"
+python3 check_result.py "results/diagnosis-${REPAIR_ID}.json" \
+  --job-id "$REPAIR_ID" --sample diagnosis --workers 1
+```
+
+Expect an empty error log and an `OK:` result check. The job ID in the filename
+keeps this attempt separate, and the ID inside the JSON confirms its origin.
 {{< /solution >}}
 {{< /challenge >}}
 

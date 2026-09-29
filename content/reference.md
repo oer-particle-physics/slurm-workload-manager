@@ -70,11 +70,13 @@ are expanded by the shell in the script body.
 ## Array Patterns
 
 ```bash
-# Indices 0 through 99, at most 10 running
-#SBATCH --array=0-99%10
+# The eight course inputs, at most two running
+#SBATCH --array=0-7%2
 
-# Selected indices only
-sbatch --array=1,4,8-12%3 array-job.sh
+# Selected course indices only; use when recovering these inputs
+source site-settings.sh
+submission=$(sbatch --parsable "${SLURM_SITE_ARGS[@]}" --array=1,4,6-7%2 array-job.sh)
+SELECTED_ID=${submission%%;*}
 
 # One array element
 scancel ARRAY_JOB_ID_TASK_ID
@@ -84,6 +86,9 @@ sacct --array -j ARRAY_JOB_ID
 ```
 
 Validate that every index maps to an input and use `%A_%a` in log names.
+Follow the [array result checks]({{< relref "/episodes/06-job-arrays#submit-and-inspect-the-array" >}})
+for every attempt. The selected-index submission above is reference syntax
+for recovery, not an additional exercise to run after the full array.
 
 ## Frequent States and Reasons
 

@@ -5,7 +5,7 @@ teaching = 15
 exercises = 10
 questions = [
   "When are array elements too small to schedule individually?",
-  "How can jobs express dependencies and prepare for interruption?",
+  "How can one job wait for another job's results?",
   "When should campaign logic move to a workflow manager?"
 ]
 objectives = [
@@ -13,14 +13,12 @@ objectives = [
   "Run several one-CPU commands without exceeding the CPUs allocated to a job.",
   "Check that a bundle completed and produced a result for every input.",
   "Submit a dependent summary job and verify that it combines the intended results.",
-  "Recognise notification, signal, and recovery patterns that depend on site policy.",
   "Identify when a workflow manager is easier to maintain than shell scripts that coordinate many jobs."
 ]
 keypoints = [
   "Group very short commands into fewer jobs when Slurm would spend more time managing each job than the command spends doing useful work.",
   "Commands in a bundle share one Slurm job: cancelling that job affects them all. The script must limit simultaneous commands, keep their logs, and handle failures.",
   "Dependencies express simple ordering but do not replace output validation or a full workflow engine.",
-  "Signals and notifications are useful only when the application and site are configured to act on them.",
   "Use a workflow manager when it becomes difficult to track job dependencies, retry failures, or rerun only the work affected by changed inputs or code."
 ]
 +++
@@ -420,37 +418,15 @@ for array dependency behaviour.
 
 ## Notifications and Time-Limit Signals
 
-Slurm can request email notifications:
-
-```bash
-#SBATCH --mail-type=END,FAIL,TIME_LIMIT
-#SBATCH --mail-user=you@example.org
-```
-
-Mail works only if the cluster configures delivery. Avoid per-element mail for
-large arrays unless you truly need it; a campaign can otherwise generate a
-storm of messages.
-
-Some applications can save their progress to a file and resume from it later;
-this is called **checkpointing**. Slurm can send a signal before the time limit
-so the application has a chance to save that progress:
-
-```bash
-#SBATCH --signal=B:USR1@60
-```
-
-The batch shell can trap it:
-
-```bash
-checkpoint_requested=false
-trap 'checkpoint_requested=true' USR1
-```
-
-The signal alone does not save progress. The application must write all the
-information needed to resume, the script must wait for the write to finish,
-and the next job must read the saved state. The signal may arrive earlier than
-the requested interval before the time limit. Test saving and restarting on
-your cluster before relying on it.
+For a long real campaign, ask whether your site provides job-completion email
+and whether your application can save and resume progress (**checkpointing**).
+Slurm's [`--mail-type`](https://slurm.schedmd.com/sbatch.html#OPT_mail-type) and
+[`--signal`](https://slurm.schedmd.com/sbatch.html#OPT_signal) options support
+notifications, but saving progress needs an application-specific workflow.
+The course workload cannot resume; its recovery method is to rerun an
+unsuccessful input. Before relying on checkpointing for a real program, follow
+that program's documented save-and-resume example and verify the resumed
+result. These options are not needed for the bundle and summary exercises.
 
 ## When a Workflow Manager Is the Better Tool
 

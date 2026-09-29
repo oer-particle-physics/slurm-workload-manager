@@ -188,7 +188,7 @@ A failed command makes `xargs` return a non-zero status, and `set -e` makes
 the batch script fail. Other commands may still finish and leave valid
 results. The script does not automatically retry failed inputs; identify
 which need another attempt before resubmitting. The
-[GNU `xargs` documentation](https://www.gnu.org/software/findutils/manual/html_node/find_html/Invoking-xargs.html)
+[GNU `xargs` documentation](https://www.gnu.org/software/findutils/manual/html_node/Invoking-xargs.html)
 lists its exit codes.
 
 {{< callout type="warning" title="Bundling moves responsibility into the script" >}}

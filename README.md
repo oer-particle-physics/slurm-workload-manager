@@ -1,5 +1,7 @@
 # Slurm Workload Manager
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23043345.svg)](https://doi.org/10.5281/zenodo.23043345)
+
 This repository contains a hands-on course for researchers who are comfortable
 with a Linux shell but new to the Slurm workload manager. The required path
 takes learners from finding their cluster's settings to submitting jobs,

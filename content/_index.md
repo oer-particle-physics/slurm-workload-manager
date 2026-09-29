@@ -59,3 +59,7 @@ No previous Slurm experience is required.
 {{< lesson/schedule title="Schedule" >}}
 <div class="hx:mt-6"></div>
 {{< lesson/authors title="Authors and Contributors" >}}
+
+## Cite this lesson
+
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23043345.svg)](https://doi.org/10.5281/zenodo.23043345)

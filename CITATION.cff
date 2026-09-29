@@ -17,4 +17,5 @@ abstract: >-
   mechanics.
 repository-code: https://github.com/oer-particle-physics/slurm-workload-manager
 url: https://oer-particle-physics.github.io/slurm-workload-manager/
+doi: 10.5281/zenodo.23043345
 license: CC-BY-4.0

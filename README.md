@@ -59,8 +59,20 @@ slides or internal documentation.
 
 ## Maintainer
 
-Clemens Lange
+* [Clemens Lange](https://clange.ch/)
 
-## Licence
+## License
 
 The lesson is released under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+
+## Citation
+
+To cite this lesson, please consult with [CITATION.cff](CITATION.cff)
+
+## Open Educational Resources (OER) on Zenodo
+
+This lesson is included in the [ETH Domain Open Educational Resources for Research Data Management](https://zenodo.org/communities/eth-domain-oer-rdm/records) communities on Zenodo.
+
+The materials developed here are published under open licenses (CC BY 4.0) and can be freely reused and adapted for teaching and training initiatives worldwide.
+
+See the Zenodo record [here](https://doi.org/10.5281/zenodo.23043345).

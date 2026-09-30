@@ -4,17 +4,25 @@ message: >-
   Please cite this lesson using the metadata from this file when
   you refer to it in publications or re-use, adapt, or expand on
   the material in your own teaching.
-type: dataset
 authors:
   - given-names: Clemens
     family-names: Lange
     orcid: https://orcid.org/0000-0002-3632-3157
-abstract: >-
+abstract: |-
   A hands-on introduction to using the Slurm workload manager on a shared
   Linux cluster. The lesson covers cluster discovery, batch and interactive
   jobs, monitoring and diagnosis, resource requests and accounting, and job
   arrays, with optional extensions on efficient campaigns and scheduler
   mechanics.
+keywords:
+  - "Slurm"
+  - "Cluster Computing"
+  - "Batch Jobs"
+  - "Resource Management"
+  - "Interactive Jobs"
+  - "Linux cluster"
+  - "Job Arrays"
+  - "Particle Physics"
 repository-code: https://github.com/oer-particle-physics/slurm-workload-manager
 url: https://oer-particle-physics.github.io/slurm-workload-manager/
 doi: 10.5281/zenodo.23043345

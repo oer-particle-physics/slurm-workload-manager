@@ -96,7 +96,7 @@ sprio -l -u "$USER"
 sprio -j "$PENDING_ID" -o "%.12i %.10Y %.10A %.10F %.10Q"
 ```
 
-If no job row appears, use the example below. Here is simplified fictional
+If no job row appears, use the example below. Here is a simplified fictional
 output for our example; the other contributions and the nice adjustment are
 zero:
 

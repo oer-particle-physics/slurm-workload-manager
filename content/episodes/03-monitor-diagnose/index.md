@@ -140,7 +140,7 @@ sacct -X -j "$MONITOR_ID" --format=JobID,JobName%20,State%20,ExitCode,Elapsed
 
 You should see `CANCELLED`, although accounting updates can take a short time.
 There should be no active queue row; an invalid-job-ID response can also mean
-Slurm has removed the finished job. No application logs or result are expected
+Slurm has removed the finished job. No application logs or results are expected
 from this held attempt. If you stop the episode before this point, cancel the
 held job before leaving.
 

@@ -329,7 +329,7 @@ echo "Summary: $SUMMARY_ID"
 ```
 
 If either submission fails, stop and resolve its error before continuing. If
-the bundle was accepted but the summary was not, it remains held: either fix
+the bundle was accepted, but the summary was not, it remains held: either fix
 and retry the summary submission with the same `ANALYSIS_ID`, or cancel the
 held bundle with `scancel "$ANALYSIS_ID"`.
 

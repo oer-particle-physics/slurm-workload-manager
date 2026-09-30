@@ -155,8 +155,8 @@ Expand them to one line per element with:
 squeue -r -j "$ARRAY_ID"
 ```
 
-The exact display depends on Slurm version and which elements have started.
-While two run, other eligible elements can show pending reason
+The exact display depends on the Slurm version and which elements have started.
+While two run, other eligible elements can show the pending reason
 `JobArrayTaskLimit`. That is the throttle working as intended.
 
 After completion, expand the accounting records:

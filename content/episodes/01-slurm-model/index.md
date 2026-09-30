@@ -247,7 +247,7 @@ Continuing the same cluster example, with the username replaced by `learner`:
      tier3         t3                                    normal
 ```
 
-- `t3` is this user's default account and is allowed by partition `short`.
+- `t3` is this user's default account and is allowed by the partition `short`.
   Slurm normally uses it when `--account` is omitted. The other listed account,
   `gpu_gres`, is for the example site's GPU work.
 - `normal` is the only allowed job QoS listed for both accounts. The blank

@@ -251,7 +251,7 @@ completion and the new result, and check that the first job's logs and result
 are still available.
 
 {{< solution >}}
-First finish checking the initial job. Keep its ID and copy its script:
+First, finish checking the initial job. Keep its ID and copy its script:
 
 ```bash
 FIRST_ID=$JOB_ID

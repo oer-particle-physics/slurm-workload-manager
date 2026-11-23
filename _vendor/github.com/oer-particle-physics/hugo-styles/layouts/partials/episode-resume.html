@@ -1,0 +1,9 @@
+{{- if eq . "content" -}}
+  <a class="lesson-episode-resume" data-episode-resume hidden>Continue where you left off</a>
+{{- else -}}
+  <template data-episode-resume-placement="{{ . }}">
+    {{- if eq . "dropdown" }}<li role="none" class="hextra-nav-menu-item">{{ else if eq . "mobile" }}<li>{{ end -}}
+    <a class="lesson-episode-resume-nav hx:hextra-focus-visible-inset" data-episode-resume-nav="{{ . }}" {{ if eq . "dropdown" }}role="menuitem"{{ end }}>Continue</a>
+    {{- if ne . "navbar" }}</li>{{ end -}}
+  </template>
+{{- end -}}

@@ -28,6 +28,7 @@
   {{- end -}}
   <div class="hextra-scrollbar hx:overflow-y-auto hx:overflow-x-hidden hx:p-4 hx:grow hx:md:h-[calc(100vh-var(--navbar-height)-var(--menu-height))]">
     <ul class="hx:flex hx:flex-col hx:gap-1 hx:md:hidden">
+      {{- partial "episode-resume.html" "mobile" -}}
       {{ template "sidebar-main" (dict "context" site.Home "pageURL" $pageURL "page" $context "toc" true) -}}
       {{ template "sidebar-footer" }}
     </ul>
@@ -98,24 +99,26 @@
           {{- $childTitle := or (T $childItem.Identifier) $childItem.Name -}}
           {{- with $childItem.Page -}}
             {{- if ne .Params.sidebar.exclude true -}}
-              {{- $childEntries = $childEntries | append (dict "title" $childTitle "link" .RelPermalink) -}}
+              {{- $childEntries = $childEntries | append (dict "title" $childTitle "link" .RelPermalink "page" .) -}}
             {{- end -}}
             {{- continue -}}
           {{- end -}}
 
           {{- $childLink := $childItem.URL -}}
+          {{- $childPage := $childItem.Page -}}
           {{- with $childItem.PageRef -}}
             {{- if hasPrefix . "/" -}}
               {{- $childLink = "" -}}
               {{- with $page.Site.GetPage . -}}
                 {{- if ne .Params.sidebar.exclude true -}}
                   {{- $childLink = .RelPermalink -}}
+                  {{- $childPage = . -}}
                 {{- end -}}
               {{- end -}}
             {{- end -}}
           {{- end -}}
           {{- if $childLink -}}
-            {{- $childEntries = $childEntries | append (dict "title" $childTitle "link" $childLink) -}}
+            {{- $childEntries = $childEntries | append (dict "title" $childTitle "link" $childLink "page" $childPage) -}}
           {{- end -}}
         {{- end -}}
 
@@ -190,7 +193,7 @@
                     {{- $link := index $child "link" -}}
                     {{- $active := eq (strings.TrimSuffix "/" $pageURL) (strings.TrimSuffix "/" $link) -}}
                     <li class="hx:flex hx:flex-col">
-                      {{- template "sidebar-item-link" dict "active" $active "open" false "title" (index $child "title") "link" $link -}}
+                      {{- template "sidebar-item-link" dict "active" $active "open" false "title" (index $child "title") "link" $link "page" (index $child "page") -}}
                     </li>
                   {{- end -}}
                 </ul>
@@ -318,6 +321,7 @@
       {{ if $external }}target="_blank" rel="noreferrer"{{ end }}
     >
       <span class="hx:min-w-0 [word-break:break-word]">{{- .title -}}</span>
+      {{- partial "episode-progress.html" (or .context .page) -}}
     </a>
     {{- if $hasChildren }}
       <button type="button" class="hextra-sidebar-collapsible-button hx:absolute hx:top-1/2 hx:-translate-y-1/2 hx:ltr:right-2 hx:rtl:left-2 hx:shrink-0 hx:cursor-pointer hx:p-0 hx:text-gray-500 hx:dark:text-neutral-400 hx:group-hover:text-gray-900 hx:dark:group-hover:text-gray-50 hx:group-data-[active=true]:text-primary-800 hx:group-data-[active=true]:dark:text-primary-600 hx:hextra-focus-visible-inset" aria-label="{{ (T "toggleSection") | default "Toggle section" }}" aria-expanded="{{ if $open }}true{{ else }}false{{ end }}">

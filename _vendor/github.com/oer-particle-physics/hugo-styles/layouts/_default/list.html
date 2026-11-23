@@ -18,6 +18,13 @@
           <h1>{{ .Title }}</h1>
         </div>
         {{ with .Content }}<div class="content hx:mt-4 hx:text-gray-600 hx:dark:text-gray-400">{{ . }}</div>{{ end }}
+        {{ if and $isEpisodeList (eq .Path "/episodes") }}
+          <div class="not-prose hx:flex hx:flex-wrap hx:items-center hx:gap-x-3">
+            {{ partial "episode-resume.html" "content" }}
+            <button type="button" class="hx:my-3 hx:cursor-pointer hx:rounded-sm hx:px-2 hx:py-2 hx:text-sm hx:text-gray-600 hx:underline hx:hover:text-gray-900 hx:dark:text-gray-300 hx:dark:hover:text-gray-100" data-episode-progress-reset hidden>Reset progress</button>
+            <span class="hx:text-sm" role="status" data-episode-progress-reset-status></span>
+          </div>
+        {{ end }}
         <div class="hextra-cards not-prose hx:mt-8 hx:grid hx:gap-4" style="--hextra-cards-grid-cols: {{ if $isCompactCollection }}2{{ else }}1{{ end }};">
             {{ range $index, $page := .Pages.ByWeight }}
               {{ $summary := "" }}

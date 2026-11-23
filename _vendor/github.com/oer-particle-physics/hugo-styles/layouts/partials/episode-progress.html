@@ -1,0 +1,11 @@
+{{- with . -}}
+  {{- if and .IsPage (eq .Section "episodes") -}}
+    <span class="lesson-episode-progress" data-episode-progress="{{ .RelPermalink }}" role="img" hidden>
+      <span class="lesson-episode-progress-ring" aria-hidden="true"></span>
+      <span data-episode-progress-value aria-hidden="true"></span>
+      <span class="lesson-episode-progress-check" aria-hidden="true">
+        {{- partial "utils/icon.html" (dict "name" "check" "attributes" `height="16" width="16"`) -}}
+      </span>
+    </span>
+  {{- end -}}
+{{- end -}}

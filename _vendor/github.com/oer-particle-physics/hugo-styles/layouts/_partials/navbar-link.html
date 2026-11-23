@@ -4,30 +4,28 @@
 {{- $icon := .icon -}}
 {{- $external := .external -}}
 {{- $pageRef := strings.TrimSuffix "/" (or $item.PageRef "") -}}
-{{- $isEpisodesMenu := and (not $item.HasChildren) (or (eq $item.Identifier "episodes") (eq $pageRef "/episodes") (eq $pageRef "episodes") (eq $item.Name "Episodes")) -}}
-{{- $episodes := slice -}}
-{{- $navScratch := newScratch -}}
-{{- $navScratch.Set "visibleChildren" (slice) -}}
-{{- if $isEpisodesMenu -}}
-  {{- $episodes = sort (where site.RegularPages "Section" "episodes") "Weight" -}}
-{{- else -}}
-  {{- range $item.Children -}}
-    {{- $showChild := true -}}
-    {{- with .PageRef -}}
-      {{- if hasPrefix . "/" -}}
-        {{- $showChild = false -}}
-        {{- with $currentPage.Site.GetPage . -}}
-          {{- $showChild = true -}}
-        {{- end -}}
+{{- $isEpisodesMenu := or (eq $item.Identifier "episodes") (eq $pageRef "/episodes") (eq $pageRef "episodes") (eq $item.Name "Episodes") -}}
+{{- $visibleChildren := slice -}}
+{{- range $item.Children -}}
+  {{- $showChild := true -}}
+  {{- with .PageRef -}}
+    {{- if hasPrefix . "/" -}}
+      {{- $showChild = false -}}
+      {{- with $currentPage.Site.GetPage . -}}
+        {{- $showChild = true -}}
       {{- end -}}
     {{- end -}}
-    {{- if $showChild -}}
-      {{- $navScratch.Add "visibleChildren" (slice .) -}}
-    {{- end -}}
+  {{- end -}}
+  {{- if $showChild -}}
+    {{- $visibleChildren = $visibleChildren | append . -}}
   {{- end -}}
 {{- end -}}
-{{- $visibleChildren := $navScratch.Get "visibleChildren" -}}
 {{- $hasMenuChildren := gt (len $visibleChildren) 0 -}}
+{{- $showEpisodeList := and $isEpisodesMenu (not $hasMenuChildren) -}}
+{{- $episodes := slice -}}
+{{- if $showEpisodeList -}}
+  {{- $episodes = partialCached "lesson-episodes.html" site site.Language.Lang -}}
+{{- end -}}
 
 {{- $active := or ($currentPage.HasMenuCurrent "main" $item) ($currentPage.IsMenuCurrent "main" $item) -}}
 {{- if and (not $active) $link -}}
@@ -37,7 +35,7 @@
     {{- $active = true -}}
   {{- end -}}
 {{- end -}}
-{{- if and (not $active) $isEpisodesMenu (eq $currentPage.Section "episodes") -}}
+{{- if and (not $active) $showEpisodeList (eq $currentPage.Section "episodes") -}}
   {{- $active = true -}}
 {{- end -}}
 {{- $activeClass := cond $active "hx:font-medium" "hx:text-gray-600 hx:hover:text-gray-800 hx:dark:text-gray-400 hx:dark:hover:text-gray-200" -}}
@@ -69,6 +67,9 @@
     role="menu"
   >
     {{- if $isEpisodesMenu -}}
+      {{- partial "episode-resume.html" "dropdown" -}}
+    {{- end -}}
+    {{- if $showEpisodeList -}}
       <li role="none" class="hextra-nav-menu-item hx:flex hx:flex-col">
         <a
           href="{{ $link }}"
@@ -87,6 +88,7 @@
           >
             <span class="hx:mt-0.5 hx:inline-flex hx:min-w-[1.5rem] hx:justify-center hx:rounded-full hx:bg-gray-100 hx:px-1.5 hx:py-0.5 hx:text-[11px] hx:font-semibold hx:text-gray-600 hx:dark:bg-neutral-800 hx:dark:text-gray-300">{{ add $index 1 }}</span>
             <span class="hx:min-w-0 hx:leading-5">{{ $episode.Title }}</span>
+            {{- partial "episode-progress.html" $episode -}}
           </a>
         </li>
       {{- end -}}
@@ -112,12 +114,16 @@
               </span>
             {{- end -}}
             {{- or (T .Identifier) .Name | safeHTML -}}
+            {{- partial "episode-progress.html" .Page -}}
           </a>
         </li>
       {{- end -}}
     {{- end -}}
   </ul>
 </div>
+{{- if $isEpisodesMenu -}}
+  {{- partial "episode-resume.html" "navbar" -}}
+{{- end -}}
 {{- else if $link -}}
 <a
   title="{{ or (T .Identifier) .Name | safeHTML }}"

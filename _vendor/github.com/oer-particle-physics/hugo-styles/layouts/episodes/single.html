@@ -21,7 +21,7 @@
             {{- end -}}
             {{ partial "audience-toggle.html" (dict "page" .) }}
           </div>
-          <div class="content">
+          <div class="content" data-episode-content="{{ .RelPermalink }}">
             {{ partial "episode-content.html" (dict "page" .) }}
           </div>
           {{ partial "components/pager.html" . }}

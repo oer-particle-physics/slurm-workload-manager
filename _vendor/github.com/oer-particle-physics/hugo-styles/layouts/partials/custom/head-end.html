@@ -1,4 +1,12 @@
 {{- $hasFrontMatterMath := false -}}
+<meta name="lesson-progress-scope" content="{{ site.Home.RelPermalink }}">
+{{- $episodePaths := slice -}}
+{{- range partialCached "lesson-episodes.html" site site.Language.Lang -}}
+  {{- $episodePaths = $episodePaths | append .RelPermalink -}}
+{{- end -}}
+{{- with $episodePaths }}
+<meta name="lesson-progress-episodes" content="{{ . | jsonify }}">
+{{- end }}
 <script>
   (() => {
     const allowed = new Set(["learner", "instructor"]);

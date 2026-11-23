@@ -13,12 +13,14 @@
   {{ $sourceDir = strings.TrimPrefix "/" $sourceDir }}
   {{ $path = urls.JoinPath $sourceDir (replace .Path "\\" "/") }}
 {{ end }}
-{{ with $page.Lastmod }}
-  {{ $lastUpdated = partial "utils/format-date.html" . }}
-{{ else }}
-  {{ with $page.Date }}
-    {{ $lastUpdated = partial "utils/format-date.html" . }}
-  {{ end }}
+{{ $lastModified := $page.Lastmod }}
+{{ if $page.IsHome }}
+  {{ $lastModified = $page.Site.Lastmod }}
+{{ else if $lastModified.IsZero }}
+  {{ $lastModified = $page.Date }}
+{{ end }}
+{{ if not $lastModified.IsZero }}
+  {{ $lastUpdated = partial "utils/format-date.html" $lastModified }}
 {{ end }}
 {{ if and (not $citationURL) $docsRepo $editBranch }}
   {{ $citationURL = printf "%s/blob/%s/CITATION.cff" $docsRepo $editBranch }}
